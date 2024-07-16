@@ -654,8 +654,10 @@ public static void main(String[] args) {
 ## 并发编程
 > 在单处理器主机上使用并发编程并不一定会提高程序的运行速度，过多的线程切换同样会给处理器增加额外的开销。但在线程会出现堵塞、等待等情况下，并发编程通常会产生令人满意的运行效率。
 
-### 术语
+* 关于thread.join()
+  如果在当前线程(可以是main()主线程，或是某一线程内调用), 线程thread调用.join()，那么当前线程将会进入堵塞状态，等待thread运行结束后，才能够继续向下运行。
 
+### 术语
 * 并发：并发是关于正确有效地控制对共享资源的访问。`并发性是一系列性能技术，专注于减少等待`。
 > 并发的关键在于`减少等待`，如果程序的某些部分被迫等待，利用并发提高程序整体的运行效率，减少等待造成的效率影响。`并发`如果在没有什么可以等待，那么就没有可加速的地方。
 * 并行：并行是使用额外的资源来更快地产生结果。
@@ -670,98 +672,175 @@ public static void main(String[] args) {
 * 线程：多个线程共享内存和I/O等资源，因此编写多线程程序时遇到的困难是在不同的线程驱动的任务之间协调这些资源，一次不能通过多个任务访问它们。
 * 进程：是一个拥有自己的地址空间的独立的程序，进程与进程之间隔离不会相互影响。
 
-### 四条格言
+### 注意点
 * 尽可能的少编写自己的代码，去使用完善的库。
 * 并发编程可能会在任意部分出现意料之外的问题，例如，你必须知道`处理器缓存`以及保持`本地缓存`与`主内存`一致的问题。你必须深入了解`对象构造的复杂性`，以便你的构造器不会`意外地`将数据暴露给其他线程`进行更改`。问题还有很多。
 * 它起作用,并不意味着它没有问题
+* 线程是否独立，是否存在与其他线程共享的内存、变量、外部资源。
+* 
+### 多线程的几种实现方式
+* 线程池 ExecutorService
+  1. `Callable` 和 `Runnable`
+    * Runnable: 该接口定义的多线程任务无返回值，并且不会抛出异常
+    ```java
+        @FunctionalInterface
+        public interface Runnable {
+            void run();
+        }
 
-### Stream（并行流）
-> 数据源的分割特性：数据源的分割特性（splittable）会影响并行流的性能。例如，ArrayList 和 Arrays 的分割性能较好，而 LinkedList 的分割性能较差。分割性较好的数据类型，并行流更够将数据源更好的分割，多线程并行处理，而分割性较差的数据类型，并行流无法将数据进行分割，并行流无法产生应有的效率，甚至会更缓慢。
-* Stream.generate()： Stream.generate 会无限动态创建过多线程调用 Supplier，直到流的终止操作（例如 limit）告诉它停止。由于是并行流，所以会有多个线程并行地调用 IntGenerator 的 get 方法。会产生超过需求的方法调用。
-* IntStream.range()：流在调用 .parallel() 之前就知道元素数量，以及跳出条件，并行流会合理分配线程进行处理，而不会像无限流那样需要动态创建过多的线程。
-* 默认的并行流使用 ForkJoinPool.commonPool()。可以通过设置自定义的 ForkJoinPool 来控制并行任务的执行环境。
-```java
-ForkJoinPool customThreadPool = new ForkJoinPool(4);
-customThreadPool.submit(() -> {
-    Stream.of(1, 2, 3, 4, 5)
-        .parallel()
-        .forEach(i -> System.out.println(Thread.currentThread().getName() + " - " + i));
-}).get();
-```
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        Runnable runnableTask = () -> {
+            System.out.println("Executing Runnable task");
+        };
+
+        executor.submit(runnableTask);
+        executor.shutdown();
+    ```
+
+    * Callable: 该接口可以返回结果，并抛出异常检查。
+    ```java
+        @FunctionalInterface
+        public interface Callable<V> {
+            V call() throws Exception;
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        Callable<String> callableTask = () -> {
+            return "Task result";
+        };
+
+        Future<String> future = executor.submit(callableTask);
+
+        try {
+            String result = future.get();
+            System.out.println("Callable result: " + result);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
+
+    ```
+  2. 标准用法
+        > 避免使用 Executors 类中的静态工厂方法，如 newFixedThreadPool、newCachedThreadPool，因为它们返回的线程池可能会存在潜在的问题，如无界队列。可以使用 ThreadPoolExecutor 类来精细控制线程池的参数。
+        ```java
+        ExecutorService executor = new ThreadPoolExecutor(
+            2, 4, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>()
+        );
+
+        ```
+     1. 配置合理的核心池大小和最大池大小：
+        * 根据应用程序的需求和系统的资源配置合理的核心池大小和最大池大小。可以通过 CPU 核心数和任务的性质（CPU 密集型还是 IO 密集型）来进行估算。
+       ```java
+       int corePoolSize = Runtime.getRuntime().availableProcessors();
+       int maxPoolSize = corePoolSize * 2;
+       ExecutorService executor = new ThreadPoolExecutor(
+           corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()
+       );
+       ```
+     2. 线程工厂自定义线程名称
+        * 自定义 ThreadFactory 可以为线程池中的线程设置有意义的名称，以便于调试和监控。
+       ```java
+       ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+           .setNameFormat("worker-%d")
+           .build();
+       ExecutorService executor = new ThreadPoolExecutor(
+           corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), namedThreadFactory
+       );
+       ```
+     3. 线程池配置拒绝策略
+       ```java
+       ExecutorService executor = new ThreadPoolExecutor(
+           corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy()
+       );
+       ```
+
+* 多线程流
+  1. 并行流 Stream
+    > 数据源的分割特性：数据源的分割特性（splittable）会影响并行流的性能。例如，ArrayList 和 Arrays 的分割性能较好，而 LinkedList 的分割性能较差。分割性较好的数据类型，并行流更够将数据源更好的分割，多线程并行处理，而分割性较差的数据类型，并行流无法将数据进行分割，并行流无法产生应有的效率，甚至会更缓慢。
+     * Stream.generate().parallel()： Stream.generate 会无限动态创建过多线程调用 Supplier，直到流的终止操作（例如 limit）告诉它停止。由于是并行流，所以会有多个线程并行地调用 IntGenerator 的 get 方法。会产生超过需求的方法调用。
+     * IntStream.range().parallel()：流在调用 .parallel() 之前就知道元素数量，以及跳出条件，并行流会合理分配线程进行处理，而不会像无限流那样需要动态创建过多的线程。
+     * 默认的并行流使用 ForkJoinPool.commonPool()。可以通过设置自定义的 ForkJoinPool 来控制并行任务的执行环境。
+       ```java
+       ForkJoinPool customThreadPool = new ForkJoinPool(4);
+       customThreadPool.submit(() -> {
+           Stream.of(1, 2, 3, 4, 5)
+               .parallel()
+               .forEach(i -> System.out.println(Thread.currentThread().getName() + " - " + i));
+       }).get();
+       ```
+
+  2. Lambda
+    > 线程池也可以通过执行`Lambda`表达式以达到与`Runnable` 或 `Callable` 相同的实现效果。
+    ```java
+    class NotRunnable {
+        public void go() {
+            System.out.println("NotRunnable");
+        }
+    }
+    class NotCallable {
+        public Integer get() {
+            System.out.println("NotCallable");
+            return 1;
+        }
+    }
+    public class LambdasAndMethodReferences {
+        public static void main(String[] args)throws InterruptedException {
+        ExecutorService exec =
+            Executors.newCachedThreadPool();
+        exec.submit(() -> System.out.println("Lambda1"));
+        exec.submit(new NotRunnable()::go);
+        exec.submit(() -> {
+            System.out.println("Lambda2");
+            return 1;
+        });
+        exec.submit(new NotCallable()::get);
+        exec.shutdown();
+        }
+    }
+    ```
+* CompletableFuture
+  > `CompletableFuture` 提供了强大的异步编程能力，可以链式调用和组合多个异步任务。
+  ```java
+  CompletableFuture.supplyAsync(() -> {
+      // 异步任务
+      return "Result";
+  }).thenApply(result -> {
+      // 后续处理
+      return result.toUpperCase();
+  }).thenAccept(System.out::println);
+  ```
+  1. 同步调用 `thenApply()` 和异步调用 `thenApplyAsync()`
+* 其他多线程应用方式
+
+  1. 虚拟线程池 Project Loom
+    > 虚拟线程是 JDK 20 的新特性，允许创建大量轻量级线程，从而更高效地利用多核处理器。
+
+    ```java
+    Thread.startVirtualThread(() -> {
+        // 虚拟线程任务
+        System.out.println("Hello from virtual thread!");
+    });
+    ```
+  2. 结构化并发
+    > 结构化并发提供了一种新的编程模型，使得并发编程更加简洁和安全。
+
+    ```java
+    try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+        Future<String> task1 = scope.fork(() -> "Task 1 result");
+        Future<String> task2 = scope.fork(() -> "Task 2 result");
+        scope.join();           // 等待所有任务完成
+        scope.throwIfFailed();  // 如果任何一个任务失败则抛出异常
+        System.out.println(task1.resultNow());
+        System.out.println(task2.resultNow());
+    }
+    ```
+
+### 线程池
 
 ### CompletableFuture
-> `CompletableFuture` 提供了强大的异步编程能力，可以链式调用和组合多个异步任务。
-
-```java
-CompletableFuture.supplyAsync(() -> {
-    // 异步任务
-    return "Result";
-}).thenApply(result -> {
-    // 后续处理
-    return result.toUpperCase();
-}).thenAccept(System.out::println);
-```
-
-### 虚拟线程（Project Loom）
-> 虚拟线程是 JDK 20 的新特性，允许创建大量轻量级线程，从而更高效地利用多核处理器。
-
-```java
-Thread.startVirtualThread(() -> {
-    // 虚拟线程任务
-    System.out.println("Hello from virtual thread!");
-});
-```
-
-### 结构化并发
-> 结构化并发提供了一种新的编程模型，使得并发编程更加简洁和安全。
-
-```java
-try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-    Future<String> task1 = scope.fork(() -> "Task 1 result");
-    Future<String> task2 = scope.fork(() -> "Task 2 result");
-    scope.join();           // 等待所有任务完成
-    scope.throwIfFailed();  // 如果任何一个任务失败则抛出异常
-    System.out.println(task1.resultNow());
-    System.out.println(task2.resultNow());
-}
-```
-
-### 线程池 ExecutorService
-
-1. 标准用法
-    * 避免使用 Executors 类中的静态工厂方法，如 newFixedThreadPool、newCachedThreadPool，因为它们返回的线程池可能会存在潜在的问题，如无界队列。可以使用 ThreadPoolExecutor 类来精细控制线程池的参数。
-```java
-ExecutorService executor = new ThreadPoolExecutor(
-    2, 4, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>()
-);
-
-```
-2. 配置合理的核心池大小和最大池大小：
-    * 根据应用程序的需求和系统的资源配置合理的核心池大小和最大池大小。可以通过 CPU 核心数和任务的性质（CPU 密集型还是 IO 密集型）来进行估算。
-```java
-int corePoolSize = Runtime.getRuntime().availableProcessors();
-int maxPoolSize = corePoolSize * 2;
-ExecutorService executor = new ThreadPoolExecutor(
-    corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()
-);
-```
-3. 线程工厂自定义线程名称
-    * 自定义 ThreadFactory 可以为线程池中的线程设置有意义的名称，以便于调试和监控。
-```java
-ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-    .setNameFormat("worker-%d")
-    .build();
-ExecutorService executor = new ThreadPoolExecutor(
-    corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), namedThreadFactory
-);
-```
-4. 线程池配置拒绝策略
-```java
-ExecutorService executor = new ThreadPoolExecutor(
-    corePoolSize, maxPoolSize, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy()
-);
-```
-
 
 
 ## 注解
