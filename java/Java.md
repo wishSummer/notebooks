@@ -1,7 +1,9 @@
 # JAVA
-
-java是一种高级编程语言，由Sun Microsystems公司于1995年推出。Java的设计目标之一是实现“一次编写，到处运行”的能力，即编写的代码可以在任何支持Java的平台上运行，而无需进行额外的修改。Java广泛应用于企业级应用、桌面应用、移动应用和Web开发等领域。
-
+>* java是一种高级编程语言，由Sun Microsystems公司于1995年推出。Java的设计目标之一是实现“一次编写，到处运行”的能力，即编写的代码可以在任何支持Java的平台上运行，而无需进行额外的修改。Java广泛应用于企业级应用、桌面应用、移动应用和Web开发等领域。
+* 主要应用场景：
+  1. 爬虫
+  2. web服务
+  3. `Android` 应用
 ## Java 优缺点
 
 *   优点：
@@ -645,9 +647,321 @@ public static void main(String[] args) {
 
 ## 异常处理
 
-## 日期时间
+## 文件流
+### IO
+>* 阻塞IO：在进行读取或写入操作时会阻塞线程。
 
-## 文件 nio
+* InputStream
+
+|   类  |   功能    |   构造器参数  |   如何使用    |
+| :--:  |   :--:    |   :--:    |   :--:    |
+|   `ByteArrayInputStream`    |   允许将内存的缓冲区当做 `InputStream` 使用  |  `byte[]` |   作为一种数据源：与 `FilterInputStream` 对象相连以提供有用接口 |
+|   `StringBufferInputStream` `已弃用` |	将 String 转换成 `InputStream`    |   字符串。底层实现实际使用 `StringBuffer`	作为一种数据源；  |将其与 `FilterInputStream` 对象相连以提供有用接口 |
+`FileInputStream` |   用于从文件中读取信息    |	字符串，表示文件名、文件或 `FileDescriptor` 对象	|   作为一种数据源：将其与 `FilterInputStream` 对象相连以提供有用接口 |
+|   `PipedInputStream`	|   产生用于写入相关 `PipedOutputStream` 的数据。实现“管道化”概念	|`PipedOutputSteam`	|   作为多线程中的数据源：将其与 `FilterInputStream` 对象相连以提供有用接口
+`SequenceInputStream`	|   将两个或多个 `InputStream` 对象转换成一个 `InputStream`	两个 `InputStream` 对象   | 或一个容纳 `InputStream` 对象的容器 `Enumeration`	作为一种数据源：    |   将其与 `FilterInputStream` 对象相连以提供有用接口   |
+| `FilterInputStream`	|   抽象类，作为“装饰器”的接口。其中，“装饰器”为其它的 InputStream 类提供有用的功能。| | |
+
+  * FilterInputStream
+
+    |   类  |   功能	|   构造器参数	|   如何使用    |
+    |   :--:    |   :---    |   :---    |   :---    |
+    |   `DataInputStream` |   与 `DataOutputStream` 搭配使用，按照移植方式从流读取基本数据类型（int、char、long 等）	|   `InputStream` |   包含用于读取基本数据类型的全部接口  |
+    |   `BufferedInputStream`	|   使用它可以防止每次读取时都得进行实际写操作。代表“使用缓冲区”    |	InputStream，可以指定缓冲区大小（可选）	|   本质上不提供接口，只是向进程添加缓冲功能。与接口对象搭配  |
+    |   `LineNumberInputStream` |	跟踪输入流中的行号，可调用 `getLineNumber()` 和 `setLineNumber(int)`    |   `InputStream`   |   	仅增加了行号，因此可能要与接口对象搭配使用  |
+    |   `PushbackInputStream`   |	具有能弹出一个字节的缓冲区，因此可以将读到的最后一个字符回退	|   `InputStream`   |   通常作为编译器的扫描器，我们可能永远也不会用到  |
+
+* OutputStream
+
+|   类  |	功能    |   构造器参数	|   如何使用    |
+|   :--:    |   :---    |   :---    |   :---    |
+|   `ByteArrayOutputStream` |	在内存中创建缓冲区。所有送往“流”的数据都要放置在此缓冲区	|   缓冲区初始大小（可选）	|   用于指定数据的目的地：将其与 FilterOutputStream 对象相连以提供有用接口  |
+|   `FileOutputStream`  |	用于将信息写入文件	|   字符串，表示文件名、文件或 FileDescriptor 对象	|   用于指定数据的目的地：将其与 FilterOutputStream 对象相连以提供有用接口  |
+|   `PipedOutputStream` |	任何写入其中的信息都会自动作为相关 `PipedInputStream` 的输出。实现“管道化”概念  |	`PipedInputStream`  |	指定用于多线程的数据的目的地：将其与 `FilterOutputStream` 对象相连以提供有用接口  |
+|   `FilterOutputStream`    |	抽象类，作为“装饰器”的接口。其中，“装饰器”为其它 OutputStream 提供有用功能。    |   |   |
+
+  * FilterOutputStream
+    | 类  |	功能    |	构造器参数  |	如何使用    |
+    | :--:    |   :---    |   :---    |   :---    |
+    | `DataOutputStream`  |	与 DataInputStream 搭配使用，因此可以按照移植方式向流中写入基本数据类型（int、char、long 等）	|   `OutputStream`  |	包含用于写入基本数据类型的全部接口  |
+    |   `PrintStream`   |	用于产生格式化输出。其中 `DataOutputStream` 处理数据的存储，`PrintStream` 处理显示	   |   `OutputStream`，可以用 boolean 值指示是否每次换行时清空缓冲区（可选）	|   应该是对 `OutputStream` 对象的 final 封装。可能会经常用到它   |
+    |   `BufferedOutputStream`	|   使用它以避免每次发送数据时都进行实际的写操作。代表“使用缓冲区”。可以调用 flush() 清空缓冲区	|   `OutputStream`，可以指定缓冲区大小（可选）	|   本质上并不提供接口，只是向进程添加缓冲功能。与接口对象搭配  |
+
+* 标准IO流
+>* 用途: 处理标准输入输出（键盘输入和屏幕输出）。
+  * 关键类:
+    1. System.in (标准输入流)
+    2. System.out (标准输出流)
+    3. System.err (标准错误输出流)
+
+* RandomAccessFile
+>* 随机读写流，独立于 `InputStream` 和 `OutputStream`。
+  * 示例用法
+    ```java
+    import java.io.*;
+
+    public class UsingRandomAccessFile {
+        static String file = "rtest.dat";
+        // 读取文件
+        public static void display() {
+            try (
+                RandomAccessFile rf =
+                    new RandomAccessFile(file, "r")
+            ) {
+                for (int i = 0; i < 7; i++)
+                    System.out.println(
+                        "Value " + i + ": " + rf.readDouble());
+                System.out.println(rf.readUTF());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static void main(String[] args) {
+            try (
+                // 写入文件
+                RandomAccessFile rf =
+                    new RandomAccessFile(file, "rw")
+            ) {
+                for (int i = 0; i < 7; i++)
+                    rf.writeDouble(i * 1.414);
+                rf.writeUTF("The end of the file");
+                rf.close();
+                display();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try (
+                RandomAccessFile rf =
+                    new RandomAccessFile(file, "rw")
+            ) {
+                // 步过 5 * 8 字节 一个Double值为8字节
+                rf.seek(5 * 8);
+                // 覆盖第个6个Double值，第一个Double值地址是0
+                rf.writeDouble(47.0001);
+                rf.close();
+                display();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    ```
+* Object Stream 对象流
+>* 用于对象序列化、反序列化。
+  * 关键类: `ObjectInputStream` 和 `ObjectOutputStream`
+  * 示例用法
+    ```java
+    // 序列化对象到文件
+    try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("object.dat"))) {
+        oos.writeObject(new String("Hello, World!"));
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    // 从文件反序列化对象
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("object.dat"))) {
+        String message = (String) ois.readObject();
+        System.out.println(message);
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+    ```
+
+
+### NIO
+>* 非阻塞IO：读写操作在准备好后立刻返回，而无需等待执行结束，不会阻塞线程。
+>* 面向缓冲区：数据以（Buffer）的形式处理，每次处理一个缓冲区的数据。
+>* 多路复用：通过选择器 (Selector) 机制，可以管理多个通道的 IO 事件。
+>* 更高性能：适合高并发、高性能的网络应用。
+
+* 关键类:
+    1. FileChannel (文件通道)
+    2. ByteBuffer (字节缓冲区)
+    3. Selectors 和 SelectionKey (选择器和选择键)
+
+* 常用通道 (Channels)
+>* 通道是双向的，可以用来读、写或同时进行读写。
+  1. FileChannel
+  2. DatagramChannel
+  3. SocketChannel
+  4. ServerSocketChannel
+
+* 缓冲区 (Buffers)
+>* 缓冲区是一个容器对象，用于存储从通道读取的数据或即将写入通道的数据。
+  * 常用缓冲区
+    1. ByteBuffer
+    2. CharBuffer
+    3. IntBuffer
+    4. FloatBuffer
+  * 缓冲区主要属性：
+    1. capacity：缓冲区的容量，缓冲区中能容纳的数据元素的最大数量。
+    2. limit：第一个不能被读或写的元素的索引，缓冲区的界限。
+    3. position：缓存区指针，指向下一个将要被读取的数据。
+    4. mark：在缓存区标记一个位置。
+
+* 选择器 (Selectors)
+>* 选择器用于实现非阻塞 I/O。选择器会注册一个或多个通道，并可以监控这些通道的多个事件。
+  1. Selector 类是选择器的核心。
+  2. SelectionKey 用于标识哪些通道已经准备好进行 I/O 操作。
+
+* 读写文件示例
+  ```java
+    import java.io.IOException;
+    import java.nio.ByteBuffer;
+    import java.nio.channels.FileChannel;
+    import java.nio.file.Path;
+    import java.nio.file.Paths;
+    import java.nio.file.StandardOpenOption;
+
+    public class FileReadExample {
+        public static void main(String[] args) {
+            Path path = Paths.get("example.txt");
+
+            // 读取文件
+            try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                while (fileChannel.read(buffer) > 0) {
+                    buffer.flip(); // Switch buffer from writing mode to reading mode
+                    while (buffer.hasRemaining()) {
+                        System.out.print((char) buffer.get());
+                    }
+                    buffer.clear(); // Clear buffer for the next read
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            //写入文件
+            try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                buffer.put("Hello, World!".getBytes());
+                buffer.flip(); // Switch buffer from writing mode to reading mode
+                fileChannel.write(buffer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+  ```
+* 网络I/O示例（服务器端）阻塞式
+  ```java
+    import java.io.IOException;
+    import java.net.InetSocketAddress;
+    import java.nio.ByteBuffer;
+    import java.nio.channels.ServerSocketChannel;
+    import java.nio.channels.SocketChannel;
+
+    public class NioServer {
+        public static void main(String[] args) {
+            try (ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()) {
+                serverSocketChannel.bind(new InetSocketAddress(8080));
+                while (true) {
+                    // serverSocketChannel.accept() 是一个阻塞操作，等待客户端连接。一旦接收到连接请求，它会返回一个 SocketChannel 用于与客户端通信。
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    ByteBuffer buffer = ByteBuffer.allocate(1024);
+                    int bytesRead = socketChannel.read(buffer);
+                    while (bytesRead != -1) {
+                        //将缓冲区从写模式切换到读模式 buffer.flip()，重置position到流启示点供后续读取。
+                        buffer.flip();
+                        while (buffer.hasRemaining()) {
+                            System.out.print((char) buffer.get());
+                        }
+                        buffer.clear();
+                        bytesRead = socketChannel.read(buffer);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+  ```
+* 网络I/O示例（客户端）
+  ```java
+    import java.io.IOException;
+    import java.net.InetSocketAddress;
+    import java.nio.ByteBuffer;
+    import java.nio.channels.SocketChannel;
+
+    public class NioClient {
+        public static void main(String[] args) {
+            // 开启通道用于与服务器通信
+            try (SocketChannel socketChannel = SocketChannel.open()) {
+                // 链接 目标地址
+                socketChannel.connect(new InetSocketAddress("localhost", 8080));
+                // 初始化缓冲区，将数据放入缓冲区
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                buffer.put("Hello, NIO!".getBytes());
+                // 重置指针 写入到通道
+                buffer.flip();
+                socketChannel.write(buffer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+  ```
+* 使用选择器进行非阻塞网络I/O（服务器端）
+  ```java
+    import java.io.IOException;
+    import java.net.InetSocketAddress;
+    import java.nio.ByteBuffer;
+    import java.nio.channels.SelectionKey;
+    import java.nio.channels.Selector;
+    import java.nio.channels.ServerSocketChannel;
+    import java.nio.channels.SocketChannel;
+    import java.util.Iterator;
+
+    public class NioServer {
+        public static void main(String[] args) throws IOException {
+            // 打开选择器
+            Selector selector = Selector.open();
+
+            // 打开服务器通道
+            ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel.bind(new InetSocketAddress(8080));
+            serverSocketChannel.configureBlocking(false);
+
+            // 将通道注册到选择器上，并注册接收事件
+            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            while (true) {
+                // 选择键
+                selector.select();
+
+                // 获取选择键集合
+                Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+
+                while (keyIterator.hasNext()) {
+                    SelectionKey key = keyIterator.next();
+
+                    if (key.isAcceptable()) {
+                        // 接受客户端连接 并将当前连接注册到 选择器
+                        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
+                        SocketChannel socketChannel = serverChannel.accept();
+                        socketChannel.configureBlocking(false);
+                        socketChannel.register(selector, SelectionKey.OP_READ);
+                    } else if (key.isReadable()) {
+                        // 读取客户端数据
+                        SocketChannel socketChannel = (SocketChannel) key.channel();
+                        ByteBuffer buffer = ByteBuffer.allocate(256);
+                        int bytesRead = socketChannel.read(buffer);
+                        if (bytesRead == -1) {
+                            socketChannel.close();
+                        } else {
+                            System.out.println("Received: " + new String(buffer.array()).trim());
+                        }
+                    }
+
+                    // 移除处理过的键
+                    keyIterator.remove();
+                }
+            }
+        }
+    }
+  ```
 
 ## 函数式编程
 
@@ -677,7 +991,20 @@ public static void main(String[] args) {
 * 并发编程可能会在任意部分出现意料之外的问题，例如，你必须知道`处理器缓存`以及保持`本地缓存`与`主内存`一致的问题。你必须深入了解`对象构造的复杂性`，以便你的构造器不会`意外地`将数据暴露给其他线程`进行更改`。问题还有很多。
 * 它起作用,并不意味着它没有问题
 * 线程是否独立，是否存在与其他线程共享的内存、变量、外部资源。
-* 
+
+### volatile
+> 变量修饰符，使变量在多线程可见
+
+* volatile 在java内存模型`jmm` 中封装的8个交互操作。
+  * read：把主内存中的值传递到工作内存，为load动作做准备。
+  * load：将read动作从主内存传递的内存变量赋值为工作区内存的变量副本。
+  * use：将工作内存中的变量传递给执行引擎。当虚拟机需要使用变量的字节码指令时执行此操作。
+  * assign：将从执行引擎接受到的值赋给工作内存的变量，当虚拟机接收到给变量赋值的字节码指令时执行操作。
+  * store：把工作内存中的一个变量的值传送到主内存中，为随后的write操作做准备。
+  * write：把store操作从工作内存得到的变量写入到主内存中。
+  * lock：作用于主内存的变量，把一个变量标示为一条线程独占的状态。
+  * Unlock：作用于主内存，把一个处于锁定状态的变量释放出来。释放后的变量才能够被其他线程锁定。
+
 ### 多线程的几种实现方式
 * 线程池 ExecutorService
   1. `Callable` 和 `Runnable`
@@ -801,18 +1128,7 @@ public static void main(String[] args) {
         }
     }
     ```
-* CompletableFuture
-  > `CompletableFuture` 提供了强大的异步编程能力，可以链式调用和组合多个异步任务。
-  ```java
-  CompletableFuture.supplyAsync(() -> {
-      // 异步任务
-      return "Result";
-  }).thenApply(result -> {
-      // 后续处理
-      return result.toUpperCase();
-  }).thenAccept(System.out::println);
-  ```
-  1. 同步调用 `thenApply()` 和异步调用 `thenApplyAsync()`
+
 * 其他多线程应用方式
 
   1. 虚拟线程池 Project Loom
@@ -841,8 +1157,120 @@ public static void main(String[] args) {
 ### 线程池
 
 ### CompletableFuture
+* 基础用法
+  > `CompletableFuture` 提供了强大的异步编程能力，可以链式调用和组合多个异步任务。
+  ```java
+  CompletableFuture.supplyAsync(() -> {
+      // 异步任务
+      return "Result";
+  }).thenApply(result -> {
+      // 后续处理
+      return result.toUpperCase();
+  }).thenAccept(System.out::println);
+  ```
+* 同步调用 `thenApply()` 和异步调用 `thenApplyAsync()`
+* 异常
+  * 任务完成或出现异常都会使CompletableFuture处于完成状态；当出现异常时，CompletableFuture并不会立即跳出异常，而是当你获取get()结果时才会看到抛出异常；
+  * 查看`CompletableFuture`状态
+  ```java
+  // 是否发生异常
+  .isCompletedExceptionally();
+  // 是否执行完毕
+  .isDone();
+  ```
+  * 链式异常处理
+      * `exceptionally()`: 参数仅在出现异常时才运行。exceptionally() 局限性在于，该函数只能返回输入类型相同的值。通过将一个好的对象插入到流中来恢复到一个可行的状态。
+      * `handle()`: 一致被调用来查看是否发生异常（必须检查fail是否为true）。但是 handle() 可以生成任何新类型，所以它允许执行处理，而不是像使用 exceptionally()那样简单地恢复。
+      * `whenComplete()`: 类似于handle()，同样必须测试它是否失败，但是参数是一个消费者，并且不修改传递给它的结果对象。
+        ```java
+        CompletableExceptions
+        .test("exceptionally", failcount)
+        .exceptionally((ex) -> { // Function
+            if (ex == null)
+                System.out.println("I don't get it yet");
+            return new Breakable(ex.getMessage(), 0);
+        })
+        .thenAccept(str ->
+                        System.out.println("result: " + str));
 
+        // Create a new result (recover):
+        CompletableExceptions
+                .test("handle", failcount)
+                .handle((result, fail) -> { // BiFunction
+                    if (fail != null)
+                        return "Failure recovery object";
+                    else
+                        return result + " is good";
+                })
+                .thenAccept(str ->
+                        System.out.println("result: " + str));
 
+        // Do something but pass the same result through:
+        CompletableExceptions
+                .test("whenComplete", failcount)
+                .whenComplete((result, fail) -> { // BiConsumer
+                    if (fail != null)
+                        System.out.println("It failed");
+                    else
+                        System.out.println(result + " OK");
+                })
+                .thenAccept(r ->
+                        System.out.println("result: " + r));
+        ```
+  * 流异常
+    CompletableFuture 和 parallel Stream 都不支持包含检查性异常的操作。相反，你必须在调用操作时处理检查到的异常：
+    ```java
+    public class ThrowsChecked {
+        class Checked extends Exception {}
+
+        static ThrowsChecked nochecked(ThrowsChecked tc) {
+            return tc;
+        }
+
+        static ThrowsChecked withchecked(ThrowsChecked tc) throws Checked {
+            return tc;
+        }
+
+        static void testStream() {
+            Stream.of(new ThrowsChecked())
+                    .map(ThrowsChecked::nochecked)
+                    // .map(ThrowsChecked::withchecked); // [1]
+                    .map(
+                            tc -> {
+                                try {
+                                    return withchecked(tc);
+                                } catch (Checked e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+        }
+
+        static void testCompletableFuture() {
+            CompletableFuture
+                    .completedFuture(new ThrowsChecked())
+                    .thenApply(ThrowsChecked::nochecked)
+                    // .thenApply(ThrowsChecked::withchecked); // [2]
+                    .thenApply(
+                            tc -> {
+                                try {
+                                    return withchecked(tc);
+                                } catch (Checked e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+        }
+    }
+    ```
+### 死锁
+> 以下四个条件同时满足时就会触发死锁。
+* 互斥条件。任务使用的资源中至少有一个不能共享的。
+* 至少有一个任务它必须持有一个资源且正在等待获取一个被当前别的任务持有的资源。
+* 资源不能被任务抢占， 任务必须把资源释放当作普通事件。
+* 必须有循环等待， 这时，一个任务等待其它任务所持有的资源， 后者又在等待另一个任务所持有的资源， 这样一直下去，知道有一个任务在等待第一个任务所持有的资源， 使得大家都被锁住。
+
+### Atomic
+
+### Synchronized
 ## 注解
 
 ### 元注解（meta-annoation）
@@ -889,228 +1317,6 @@ trackUseCases(List<Integer> useCases, Class<?> cl) {
 ```
 
 ### 注解默认值限制
-
 *   注解元素在声明中，所有元素都存在，并且具有相应的值。不能有不确定的值。也就是说，元素要么有默认值，要么就在使用注解时提供元素的值。
 *   无论是在源代码声明时还是在注解接口中定义默认值时，都不能使用 null 作为其值。解决方案是提供每个类型对应的空值。(如String为 "")
 *   注解不支持继承
-
-# 数据结构
-
-## 红黑树（平衡二叉树）
-
-# 算法
-
-## Hash算法
-
-把任意长度的输入，通过散列算法，变换成固定长度的输出，就是散列值；
-
-*   特性：
-    *   相同的输入一定会产生相同的结果
-
-    *   不相同的输入也会产生相同的结果，称之为碰撞
-*   常见Hash函数
-    *   直接定址法：直接以关键字k或者k加上某个常数（k+c）作为哈希地址。
-
-    *   数字分析法：提取关键字中取值比较均匀的数字作为哈希地址。
-
-    *   除留余数法：用关键字k除以某个不大于哈希表长度m的数p，将所得余数作为哈希表地址。
-
-    *   分段叠加法：按照哈希表地址位数将关键字分成位数相等的几部分，其中最后一部分可以比较短。然后将这几部分相加，舍弃最高进位后的结果就是该关键字的哈希地址。
-
-    *   平方取中法：如果关键字各个部分分布都不均匀的话，可以先求出它的平方值，然后按照需求取中间的几位作为哈希地址。
-
-    *   伪随机数法：采用一个伪随机数当作哈希函数。
-*   Hash地址定位解决地址碰撞的方式
-    *   开放定址法：开放定址法就是一旦发生了冲突，就去寻找下一个空的散列地址，只要散列表足够大，空的散列地址总能找到，并将记录存入。
-
-    *   链地址法：将哈希表的每个单元作为链表的头结点，所有哈希地址为i的元素构成一个同义词链表。即发生冲突时就把该关键字链在以该单元为头结点的链表的尾部。
-
-    *   再哈希法：当哈希地址发生冲突用其他的函数计算另一个哈希函数地址，直到冲突不再产生为止。
-
-    *   建立公共溢出区：将哈希表分为基本表和溢出表两部分，发生冲突的元素都放入溢出表中。
-
-# 设计模式
-
-## 工厂
-
-## 动态代理
-
-```java
-// 当一个类实现了Serilizable接口，这个类的属性和方法就能够被自动序列化，而被@transient标记的属性（方法和类不能够被标记）不会被序列化，并且它的的生命周期仅存于内存，不会写到磁盘进行持久化；
-// 一个静态变量不管是否被transient标记都不能够被序列化。若静态变量反序列化后存在值，反序列化后类中static型变量的值为当前JVM中对应static变量的值，这个值是JVM中的不是反序列化得出的。
-//但是实现Externalizable接口，并重写接口方法可以实现序列化需要的属性，无论是否被@transient 或者static修饰
-@transient
-
-```
-
-### 注解@JsonFormat主要是后台到前台的时间格式的转换
-
-@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH\:mm\:ss", timezone = "GMT+8")
-
-### 注解@DateTimeFormat主要是前台到后台的时间格式的转换 "yyyy-MM-dd HH-mm-ss"
-
-## 关于判空
-
-ispresent()
-isblank() 若为空，空字符也为空
-isEmpty() 长度=0
-
-## Http发送请求
-
-```java
-http发送请求
-
-/**
- * wesoft.com Inc.
- * Copyright (c) 2005-2016 All Rights Reserved.
- */
-package com.wesoft.util;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import javax.validation.constraints.NotNull;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-public final class HttpRequest {
-
-    private static ObjectMapper om = new ObjectMapper();
-
-    /**
-     * 通过GET方式发起http请求
-     */
-    public static String sendGet(String url) throws IOException {
-        CloseableHttpClient httpClient = getHttpClient();
-        try {
-            HttpGet get = new HttpGet(url);
-            CloseableHttpResponse httpResponse;
-            httpResponse = httpClient.execute(get);
-            HttpEntity entity = httpResponse.getEntity();
-            if (entity != null) {
-                return EntityUtils.toString(entity);
-            } else {
-                return null;
-            }
-        } finally {
-            closeHttpClient(httpClient);
-        }
-    }
-
-    public static String sendPost(String url, @NotNull Map<String, String> parameters) throws IOException {
-        return sendPost(url, parameters, "UTF-8");
-    }
-
-    /**
-     *
-     * @param url
-     * @param parameters
-     * @param code 编码方式
-     * @return
-     */
-    public static String sendPost(String url, @NotNull Map<String, String> parameters,
-                                  String code) throws IOException {
-        CloseableHttpClient httpClient = getHttpClient();
-        try {
-            HttpPost post = new HttpPost(url);
-            List<NameValuePair> list = new ArrayList<>();
-
-            parameters.forEach((key, val) -> list.add(new BasicNameValuePair(key, val)));
-
-            UrlEncodedFormEntity uefEntity = new UrlEncodedFormEntity(list, code);
-            post.setEntity(uefEntity);
-
-            CloseableHttpResponse httpResponse = httpClient.execute(post);
-            HttpEntity entity = httpResponse.getEntity();
-            if (entity != null) {
-                return EntityUtils.toString(entity);
-            } else {
-                return null;
-            }
-
-        } finally {
-            closeHttpClient(httpClient);
-        }
-
-    }
-
-    public static String sendPostByJson(String url,
-                                        @NotNull Map<String, String> parameters) throws IOException {
-        CloseableHttpClient httpClient = getHttpClient();
-        HttpPost httpPost = new HttpPost(url);
-        StringEntity stringEntity = new StringEntity(om.writeValueAsString(parameters),
-            StandardCharsets.UTF_8);
-
-        httpPost.setHeader("content-type", "application/json;charset=utf-8");
-        httpPost.setEntity(stringEntity);
-
-        try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost);) {
-            HttpEntity entity = httpResponse.getEntity();
-            if (entity != null) {
-                return EntityUtils.toString(entity);
-            } else {
-                return null;
-            }
-        } finally {
-            closeHttpClient(httpClient);
-        }
-
-    }
-
-    private static CloseableHttpClient getHttpClient() {
-        return HttpClients.createDefault();
-    }
-
-    private static void closeHttpClient(CloseableHttpClient client) throws IOException {
-        if (client != null) {
-            client.close();
-        }
-    }
-
-}
-
-```
-
-## 加解密 AES MD5
-
-```java
-private String encryptMd5(String phone, String content) {
-    return DigestUtils.md5Hex((password + extno + phone + content).getBytes(StandardCharsets.UTF_8)).toUpperCase();
-}
-
-    private String encryptAES(String phone) {
-        try {
-            // 创建AES加密器
-            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-
-            // 加载密钥
-            SecretKeySpec secretKeySpec = new SecretKeySpec(
-                mobileEencryptionMode.getBytes(StandardCharsets.UTF_8), ALGORITHM);
-
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-
-            // 加密字节数组
-            byte[] encryptedBytes = cipher.doFinal(phone.getBytes(StandardCharsets.UTF_8));
-
-            // 将密文转换为 Base64 编码字符串
-            return Base64.getEncoder().encodeToString(encryptedBytes);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-```
-
