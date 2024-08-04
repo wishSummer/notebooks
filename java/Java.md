@@ -549,6 +549,7 @@ Class.getMethods()
 Class.getDeclaredMethods()
 ```
 
+
 ## 泛型
 
 ### 泛型声明方式
@@ -1268,9 +1269,36 @@ public static void main(String[] args) {
 * 资源不能被任务抢占， 任务必须把资源释放当作普通事件。
 * 必须有循环等待， 这时，一个任务等待其它任务所持有的资源， 后者又在等待另一个任务所持有的资源， 这样一直下去，知道有一个任务在等待第一个任务所持有的资源， 使得大家都被锁住。
 
+### 线程异常
+* 主线程无法捕获子线程内发生的异常,可以通过静态方法设置 `Thread` 异常捕获，也可以单独调用线程示例的setUncaughtExceptionHandler方法设置异常捕获。
+```java
+  Thread.setDefaultUncaughtExceptionHandler(
+      new MyUncaughtExceptionHandler());
+```
+### volatile
+* 使用该关键字标记的变量，线程直接读写主内存，从而使多个线程可见，保证数据一致性。
+* 无法保证操作原子性，在并发操作、多线程环境下，需要额外使用 `Synchronized` 上锁避免资源竞争问题。
+* 关键字仅能保证变量所有线程可见以及指令重排，。
+* 禁止指令重排序：编译器和 `CPU` 不会对 `volatile` 变量的读/写操作进行重排序。
+  * 确保被标记 `volatile` 变量前面的写操作，依旧在 `volatile` 变量前运行，不关心前面的写操作是否指令排。`volatile` 变量后的操作同上。
+* 字分裂
+  * 当 `Java` 数据类型字节数较大时（如 `double`、`long` 64位），JVM允许将64位数量的读写分为两个32位单独操作执行，写入变量的过程将分为两步进行。
+  * 在读取变量时存在脏读的情况。（读取时在第一步执行结束，和第二步开始前）。
+  * 使用 `volatile` 修饰符可以组织字分裂的情况。
+  * 但如果使用 `synchronized` 或 `java.util.concurrent.atomic` 类之一保护这些变量，`volatile` 也可被替代。
+* volatile 适用于 仅有一个线程对变量存在写操作，而其他线程都为读取的多线程环境。
+* 最后尽量不要使用 `volatile` ，选择使用 `Atomic`。
 ### Atomic
+>* 原子性可以应用于除 `long` 和 `double` 之外的所有基本类型之上的 “简单操作”。(字分裂问题)
 
 ### Synchronized
+>* 在使用并发时，将字段设为 private 特别重要；否则，synchronized 关键字不能阻止其他任务直接访问字段。
+
+* 资源竞争
+  * 一个线程可以获取对象的锁多次。
+  * `JVM` 会追踪对象被锁定的次数，若对象未被线程锁定，则计数为 `0` 。当一个线程首次获得锁时，计数为 `1`，每次同一个线程在同一个对象上获取另一个锁时（线程在未释放对象某一方法锁的同时请求对象其他需获取锁的方法时）计数器会增加。只有首先获取到锁的线程才允许多次获取同一对象上的多个锁。当线程离开 `Synchronized` 方法时，计数递减，直到计数器标记为 `0` 。
+  * 当某个方法正在读写某一会被其他线程读写的变量时，需要使用相同的监视器锁同步。
+
 ## 注解
 
 ### 元注解（meta-annoation）
@@ -1320,3 +1348,387 @@ trackUseCases(List<Integer> useCases, Class<?> cl) {
 *   注解元素在声明中，所有元素都存在，并且具有相应的值。不能有不确定的值。也就是说，元素要么有默认值，要么就在使用注解时提供元素的值。
 *   无论是在源代码声明时还是在注解接口中定义默认值时，都不能使用 null 作为其值。解决方案是提供每个类型对应的空值。(如String为 "")
 *   注解不支持继承
+
+
+
+
+## 对象序列化
+>* 可以对数据对象进行持久化操作。
+>* 可以使用 `Web Socket`将数据对象进行网络传输。
+>* 序列化和反序列化数据读取顺序必须一致。
+>* 静态变量无法序列化。
+
+### Serializable
+>* 自动序列化接口。
+>* 默认将对像所有属性数据进行序列化操作，可以通过使用 `@transient`注解标注不需要进行序列化的属性。
+
+* @transient
+  * @transient修饰的变量不能被序列化；
+  * @transient只作用于实现 Serializable 接口；
+  * @transient只能用来修饰普通成员变量字段；
+  * 不管有没有 @transient 修饰，静态变量都不能被序列化；
+
+### Externalizable
+>* 手动序列化接口。
+>* 可以将静态变量进行序列化。
+
+```java
+public class Blip3 implements Externalizable {
+    private int i;
+    private String s; // No initialization
+    public Blip3() {
+        System.out.println("Blip3 Constructor");
+// s, i not initialized
+    }
+    public Blip3(String x, int a) {
+        System.out.println("Blip3(String x, int a)");
+        s = x;
+        i = a;
+// s & i initialized only in non-no-arg constructor.
+    }
+    @Override
+    public String toString() { return s + i; }
+    @Override
+    public void writeExternal(ObjectOutput out)
+            throws IOException {
+        System.out.println("Blip3.writeExternal");
+// You must do this: 手动序列化属性，不关心是否被@transient修饰
+        out.writeObject(s);
+        out.writeInt(i);
+    }
+    @Override
+    public void readExternal(ObjectInput in)
+            throws IOException, ClassNotFoundException {
+        System.out.println("Blip3.readExternal");
+// You must do this: 读取序列化属性
+        s = (String)in.readObject();
+        i = in.readInt();
+    }
+// 文件流读写示例
+    public static void main(String[] args) {
+        System.out.println("Constructing objects:");
+        Blip3 b3 = new Blip3("A String ", 47);
+        System.out.println(b3);
+        try(
+                ObjectOutputStream o = new ObjectOutputStream(
+                        new FileOutputStream("Blip3.serialized"))
+        ) {
+            System.out.println("Saving object:");
+            o.writeObject(b3);
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+// Now get it back:
+        System.out.println("Recovering b3:");
+        try(
+                ObjectInputStream in = new ObjectInputStream(
+                        new FileInputStream("Blip3.serialized"))
+        ) {
+            b3 = (Blip3)in.readObject();
+        } catch(IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println(b3);
+    }
+}
+```
+
+### 静态变量序列化
+* 自动序列化无法对静态变量生效，可以手动对静态变量单独操作进行序列化。
+* 静态变量反序列化后，若对应类的静态属性已存在值，则静态反序列化值会覆盖当前JVM中对应的静态变量的值。
+* 实现Externalizable接口，并重写接口方法可以实现序列化需要的属性，无论是否被@transient 或者static修饰
+* 若一个输入流重复读取一个序列化对象，则多次获取到的对象为同一对象，内存地址相同。若另创建新的流读取，则获取到的对象为新创建的对象，与其他流得到的对象地址不相同。
+
+
+### XML
+> XML标签序列化数据接口
+```java
+import nu.xom.*;
+import java.io.*;
+import java.util.*;
+public class APerson {
+    private String first, last;
+    public APerson(String first, String last) {
+        this.first = first;
+        this.last = last;
+    }
+    // Produce an XML Element from this APerson object:
+    public Element getXML() {
+        Element person = new Element("person");
+        Element firstName = new Element("first");
+        firstName.appendChild(first);
+        Element lastName = new Element("last");
+        lastName.appendChild(last);
+        person.appendChild(firstName);
+        person.appendChild(lastName);
+        return person;
+    }
+    // Constructor restores a APerson from XML:
+    public APerson(Element person) {
+        first = person
+                .getFirstChildElement("first").getValue();
+        last = person
+                .getFirstChildElement("last").getValue();
+    }
+    @Override
+    public String toString() {
+        return first + " " + last;
+    }
+    // Make it human-readable:
+    public static void
+    format(OutputStream os, Document doc)
+            throws Exception {
+        Serializer serializer =
+                new Serializer(os,"ISO-8859-1");
+        serializer.setIndent(4);
+        serializer.setMaxLength(60);
+        serializer.write(doc);
+        serializer.flush();
+    }
+    
+    // 写入XML对象
+    public static void main(String[] args) throws Exception {
+        List<APerson> people = Arrays.asList(
+                new APerson("Dr. Bunsen", "Honeydew"),
+                new APerson("Gonzo", "The Great"),
+                new APerson("Phillip J.", "Fry"));
+        System.out.println(people);
+        Element root = new Element("people");
+        for(APerson p : people)
+            root.appendChild(p.getXML());
+        Document doc = new Document(root);
+        format(System.out, doc);
+        format(new BufferedOutputStream(
+                new FileOutputStream("People.xml")), doc);
+
+
+
+        // 读取 XML对象
+        public List readPeople(String fileName) throws Exception {
+                List list = new ArrayList();
+            Document doc =
+                    new Builder().build(new File(fileName));
+            Elements elements =
+                    doc.getRootElement().getChildElements();
+            for(int i = 0; i < elements.size(); i++)
+                list.add(new APerson(elements.get(i)));
+            return list;
+        }
+
+    }
+}
+```
+
+## 数据压缩
+>* Java I/O 类库提供了可以读写压缩格式流的类。你可以将其他 I/O 类包装起来用于提供压缩功能。
+>* 这些类不是从 Reader 和 Writer 类派生的，而是 InputStream 和 OutputStream 层级结构的一部分。这是由于压缩库处理的是字节，而不是字符。
+>* 但是，你可能会被迫混合使用两种类型的流（请记住，你可以使用 InputStreamReader 和 OutputStreamWriter，这两个类可以在字节类型和字符类型之间轻松转换）。
+
+* `ZIP` 和 `GZIP` 使用较多
+|   压缩类  |	功能    |
+|   :--:    |   :---    |
+|   CheckedInputStream	|    getCheckSum() 可以对任意 InputStream 计算校验和（而不只是解压）    |
+|   CheckedOutputStream |   getCheckSum() 可以对任意 OutputStream 计算校验和（而不只是压缩）    |
+|   DeflaterOutputStream    |   压缩类的基类    |
+|   ZipOutputStream	|   DeflaterOutputStream 类的一种，用于压缩数据到 Zip 文件结构  |
+|   GZIPOutputStream	|   DeflaterOutputStream 类的一种，用于压缩数据到 GZIP 文件结构 |
+|   InflaterInputStream	|   解压类的基类    |
+|   ZipInputStream	|   InflaterInputStream 类的一种，用于解压 Zip 文件结构的数据   |
+|   GZIPInputStream	|   InflaterInputStream 类的一种，用于解压 GZIP 文件结构的数据  |
+
+* GZIP解压缩单文件简单示例
+```java
+public class GZIPcompress {
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println(
+                    "Usage: \nGZIPcompress file\n" +
+                            "\tUses GZIP compression to compress " +
+                            "the file to test.gz");
+            System.exit(1);
+        }
+        try (
+                // 获取输入文件流
+                InputStream in = new BufferedInputStream(
+                        new FileInputStream(args[0]));
+                // 获取输出文件流并使用GZIP包装
+                BufferedOutputStream out =
+                        new BufferedOutputStream(
+                                new GZIPOutputStream(
+                                        new FileOutputStream("test.gz")))
+        ) {
+            System.out.println("Writing file");
+            int c;
+            while ((c = in.read()) != -1)
+                out.write(c);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Reading file");
+        try (
+            // 解压缩 读取
+                BufferedReader in2 = new BufferedReader(
+                        new InputStreamReader(new GZIPInputStream(
+                                new FileInputStream("test.gz"))))
+        ) {
+            in2.lines().forEach(System.out::println);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+```
+* ZIP多文件存储
+```java
+import java.io.*;
+import java.util.*;
+import java.util.zip.*;
+
+public class ZipCompress {
+    public static void main(String[] args) {
+        // 检查是否提供了命令行参数，如果没有提供则输出用法并退出
+        if (args.length == 0) {
+            System.out.println("Usage: java ZipCompress file1 file2 ...");
+            System.exit(1);
+        }
+
+        // 压缩文件部分
+        try (
+            // 创建文件输出流，指向压缩后的文件
+            FileOutputStream f = new FileOutputStream("test.zip");
+            // 创建一个带校验和的输出流，使用Adler32算法
+            CheckedOutputStream csum = new CheckedOutputStream(f, new Adler32());
+            // 创建ZIP输出流
+            ZipOutputStream zos = new ZipOutputStream(csum);
+            // 创建缓冲输出流包装ZIP输出流，提高写入效率
+            BufferedOutputStream out = new BufferedOutputStream(zos)
+        ) {
+            // 设置ZIP文件的注释
+            zos.setComment("A test of Java Zipping");
+            // 遍历所有的输入文件
+            for (String arg : args) {
+                System.out.println("Writing file " + arg);
+                // 打开输入文件流
+                try (
+                    InputStream in = new BufferedInputStream(new FileInputStream(arg))
+                ) {
+                    // 创建一个新的ZIP条目，并放入ZIP输出流中
+                    zos.putNextEntry(new ZipEntry(arg));
+                    int c;
+                    // 读取输入文件的内容，并写入到ZIP输出流中
+                    while ((c = in.read()) != -1)
+                        out.write(c);
+                }
+                // 刷新缓冲输出流，确保所有数据都被写入
+                out.flush();
+            }
+            // 打印校验和，校验和在文件关闭后才有效
+            System.out.println("Checksum: " + csum.getChecksum().getValue());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // 解压文件部分
+        System.out.println("Reading file");
+        try (
+            // 创建文件输入流，指向压缩文件
+            FileInputStream fi = new FileInputStream("test.zip");
+            // 创建一个带校验和的输入流，使用Adler32算法
+            CheckedInputStream csumi = new CheckedInputStream(fi, new Adler32());
+            // 创建ZIP输入流
+            ZipInputStream in2 = new ZipInputStream(csumi);
+            // 创建缓冲输入流包装ZIP输入流，提高读取效率
+            BufferedInputStream bis = new BufferedInputStream(in2)
+        ) {
+            ZipEntry ze;
+            // 遍历ZIP文件中的所有条目
+            while ((ze = in2.getNextEntry()) != null) {
+                System.out.println("Reading file " + ze);
+                int x;
+                // 读取ZIP条目的内容，并输出到控制台
+                while ((x = bis.read()) != -1)
+                    System.out.write(x);
+            }
+            // 如果只有一个文件，打印其校验和
+            if (args.length == 1)
+                System.out.println("Checksum: " + csumi.getChecksum().getValue());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // 另一种打开和读取ZIP文件的方式
+        try (
+            // 创建一个ZipFile对象，用于读取ZIP文件
+            ZipFile zf = new ZipFile("test.zip")
+        ) {
+            // 获取ZIP文件中的所有条目
+            Enumeration<? extends ZipEntry> e = zf.entries();
+            while (e.hasMoreElements()) {
+                ZipEntry ze2 = e.nextElement();
+                System.out.println("File: " + ze2);
+                // 可以像之前那样提取数据
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+```
+
+
+### Java的Jar包
+>* `Zip` 格式也用于 JAR（Java ARchive）文件格式，这是一种将一组文件收集到单个压缩文件中的方法，就像 `Zip` 一样。与 `Java` 中的其他所有内容一样，`JAR` 文件是跨平台的，因此你不必担心平台问题。你还可以将音频和图像文件像类文件一样包含在其中。
+>* jar 工具不像 Zip 实用程序那样通用。例如，你无法将文件添加或更新到现有 JAR 文件；只能从头开始创建 JAR 文件。
+>* 此外，你无法将文件移动到 JAR 文件中，在移动文件时将其删除。
+
+* JDK 附带的 jar 工具会自动压缩你选择的文件。你可以在命令行上调用它：
+```java
+jar [options] destination [manifest] inputfile(s)
+```
+
+* `java` 关于jar的相关指令
+
+|   选项	|   功能    |
+|   :--:    |   :---    |
+|   c	    |   创建一个新的或者空的归档文件    |
+|   t   |	列出内容目录    |
+|   x   |	提取所有文件    |
+|   x   | file	提取指定的文件  |
+|   f   |	这代表着，“传递文件的名称。”如果你不使用它，jar 假定它的输入将来自标准输入，或者，如果它正在创建一个文件，它的输出将转到标准输出。  |
+|   m   |	代表第一个参数是用户创建的清单文件的名称。  |
+|   v   |	生成详细的输出用于表述 jar 所作的事情   |
+|   0   |	仅存储文件;不压缩文件（用于创建放在类路径中的 JAR 文件）。  |
+|   M   |	不要自动创建清单文件    |
+
+* 示例java代码
+命令创建名为 myJarFile 的 JAR 文件。 jar 包含当前目录中的所有类文件，以及自动生成的清单文件：
+```java
+jar cf myJarFile.jar *.class
+```
+
+下一个命令与前面的示例类似，但它添加了一个名为 myManifestFile.mf 的用户创建的清单文件。 ：
+```java
+jar cmf myJarFile.jar myManifestFile.mf *.class
+```
+
+这个命令输出了 myJarFile.jar 中的文件目录：
+```java
+jar tf myJarFile.jar
+```
+
+如下添加了一个“verbose”的标志，用于生成更多关于 myJarFile.jar 中文件的详细信息：
+```java
+jar tvf myJarFile.jar
+```
+
+假设 audio，classes 和 image 都是子目录，它将所有子目录组合到文件 myApp.jar 中。还包括“verbose”标志，以便在 jar 程序工作时提供额外的反馈：
+```java
+jar cvf myApp.jar audio classes image
+```
+
+如果你在创建 JAR 文件时使用了 0（零） 选项，该文件将会被替换在你的类路径（CLASSPATH）中：然后 Java 可以搜索到 lib1.jar 和 lib2.jar 的类文件。
+```java
+CLASSPATH="lib1.jar;lib2.jar;"
+```
