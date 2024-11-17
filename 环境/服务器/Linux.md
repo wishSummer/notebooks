@@ -1,12 +1,62 @@
 # Linux
 
 ## 常用命令
-
 ```shell
 # 查看liunx内核
 cat /etc/os-release
 uname -a
 ```
+
+## 查看磁盘占用
+> du 查看的为磁盘实际占用
+> df 查看的为应用程序磁盘占用(存在文件实际已删除，但程序依旧占有磁盘权柄)
+```shell
+# 查看磁盘总体占用（应用磁盘权柄占用）
+df -h
+
+# 查看当前目录文件大小
+du -sh *
+
+
+# 解决du 查询磁盘占用和df 不一致问题
+# 查找已被删除，但仍占用空间的文件
+lsof | grep '(deleted)'
+
+# 将文件大小设置为0，释放空间
+truncate -s 0 /proc/<PID>/fd/<FD>
+truncate -s 0 /proc/9646/fd/73
+# 位置对照
+dockerd    9646 21650  root   73w   REG    253,1 10088313763     400398 /var/lib/docker/containers/40694089af8eb9bb75ec4326361a83bcef435b989f0a323d0187c1dc1333426f/40694089af8eb9bb75ec4326361a83bcef435b989f0a323d0187c1dc1333426f-json.log (deleted)
+```
+
+## Linux 清理系统日志文件 /var/log/message
+
+```shell
+#  查看日志文件权限标志
+lsattr /var/log/messages
+
+# 关闭日志程序 rsyslog
+systemctl stop rsyslog
+
+# 删除日志权限标志
+chattr -a /var/log/messages
+
+# 清空日志文件内容
+> /var/log/messages
+
+# 恢复日志权限标志
+chattr +a /var/log/messages
+
+# 启动日志程序 rsyslog
+systemctl start rsyslog
+
+# 查看日志程序状态
+systemctl status rsyslog
+
+```
+
+
+
 
 ## ll 和 ls
 

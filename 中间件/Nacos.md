@@ -1,3 +1,42 @@
+# docker环境下搭建Nacos
+> 需要先保证数据库连接，以及nacos基础表创建。
+* docker-compose.yml
+```shell
+version: "3.0"
+services:
+  nacos:
+    image: nacos/nacos-server
+    container_name: nacos-server
+    env_file:
+      - ./env/custom-application-config.env
+    volumes:
+      - ./standalone-logs/:/home/nacos/logs
+      - ./init.d/application.properties:/home/nacos/conf/application.properties
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: on-failure
+networks:
+  default:
+    external:
+      name: default-overlay
+```
+* `custom-application-config.env`
+```shell
+PREFER_HOST_MODE=hostname
+MODE=standalone
+SPRING_DATASOURCE_PLATFORM=mysql
+NACOS_AUTH_IDENTITY_KEY=2222
+NACOS_AUTH_IDENTITY_VALUE=2xxx
+```
+* `nacos` application.properties 添加配置`mysql`环境变量  
+  ```yml
+  // MYSQL_HOST：mysql在docker-compose.yml 服务名
+  spring.datasource.url=jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/nacos
+  spring.datasource.username=root
+  spring.datasource.password=root
+  ```
+
 # Nacos：Dynamic Naming and Configeration Service
 
     - 服务发现和服务健康监测
