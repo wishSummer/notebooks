@@ -6,12 +6,12 @@
   3. `Android` 应用
 ## Java 优缺点
 
-*   优点：
-    *   跨平台性：通过在不同平台安装JVM，一套代码在不同操作系统上运行。
-    *   面向对象：Java是一种面向对象编程的高级编程语言。
-    *   内存管理：Java有严格的访问控制和内存管理机制，可以防止内存泄漏和程序崩溃，并提供安全性相关的特性，如安全沙箱机制和自动内存管理。
-    *   多线程支持
-    *   丰富的开发工具支持：Java拥有各种开发工具和框架，如集成开发环境（IDE）、调试器和性能分析工具，可以提高开发效率和代码质量。
+* 优点：
+  * 跨平台性：通过在不同平台安装JVM，一套代码在不同操作系统上运行。
+  * 面向对象：Java是一种面向对象编程的高级编程语言。
+  * 内存管理：Java有严格的访问控制和内存管理机制，可以防止内存泄漏和程序崩溃，并提供安全性相关的特性，如安全沙箱机制和自动内存管理。
+  * 多线程支持
+  * 丰富的开发工具支持：Java拥有各种开发工具和框架，如集成开发环境（IDE）、调试器和性能分析工具，可以提高开发效率和代码质量。
 *   缺点：
     *   垃圾回收机制：Java使用垃圾回收机制来自动管理内存，但这也会导致一些性能问题和额外的开销。
     *   执行速度较慢：由于Java是解释执行的语言，相比于编译语言执行速度较慢。
@@ -525,8 +525,8 @@ Base.isInstance(x) true
 Derived.isInstance(x) false
 x.getClass() == Base.class true
 x.getClass() == Derived.class false
-x.getClass().equals(Base.class)) true
-x.getClass().equals(Derived.class)) false
+x.getClass().equals(Base.class) true
+x.getClass().equals(Derived.class) false
 
 // 父类class typeinfo.Derived
 x instanceof Base true
@@ -535,8 +535,8 @@ Base.isInstance(x) true
 Derived.isInstance(x) true
 x.getClass() == Base.class false
 x.getClass() == Derived.class true
-x.getClass().equals(Base.class)) false
-x.getClass().equals(Derived.class)) true
+x.getClass().equals(Base.class) false
+x.getClass().equals(Derived.class) true
 ```
 
 ### 类方法的提取
