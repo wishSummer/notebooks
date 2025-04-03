@@ -661,7 +661,7 @@ public static void main(String[] args) {
 |   `StringBufferInputStream` `已弃用` |	将 String 转换成 `InputStream`    |   字符串。底层实现实际使用 `StringBuffer`	作为一种数据源；  |将其与 `FilterInputStream` 对象相连以提供有用接口 |
 `FileInputStream` |   用于从文件中读取信息    |	字符串，表示文件名、文件或 `FileDescriptor` 对象	|   作为一种数据源：将其与 `FilterInputStream` 对象相连以提供有用接口 |
 |   `PipedInputStream`	|   产生用于写入相关 `PipedOutputStream` 的数据。实现“管道化”概念	|`PipedOutputSteam`	|   作为多线程中的数据源：将其与 `FilterInputStream` 对象相连以提供有用接口
-`SequenceInputStream`	|   将两个或多个 `InputStream` 对象转换成一个 `InputStream`	两个 `InputStream` 对象   | 或一个容纳 `InputStream` 对象的容器 `Enumeration`	作为一种数据源：    |   将其与 `FilterInputStream` 对象相连以提供有用接口   |
+`SequenceInputStream`	|   将两个或多个 `InputStream` 对象转换成一个 `InputStream`	   | 两个 `InputStream` 对象或一个容纳 `InputStream` 对象的容器 `Enumeration`	作为一种数据源：    |   将其与 `FilterInputStream` 对象相连以提供有用接口   |
 | `FilterInputStream`	|   抽象类，作为“装饰器”的接口。其中，“装饰器”为其它的 InputStream 类提供有用的功能。| | |
 
   * FilterInputStream
