@@ -1092,8 +1092,198 @@ public class ProducerConsumerWithCondition {
 
 ### 5.5 管道通信
 
+> Java 管道是一种特殊的流，用于在线程之间传递数据。它通常由一个输入管道流和一个输出管道流组成。输入管道流用于从一个线程读取数据，而输出管道流用于将数据写入另一个线程。这两个管道流之间的数据传输是单向的，即数据只能从输入流传输到输出流。
+
 - `PipedInputStream` / `PipedOutputStream`
+  - 字节流
 - `PipedReader` / `PipedWriter`
+  - 字符流
+- 只能线程间通信，不能单线程使用。
+- 一次只能一个线程写，一个线程读，否则可能抛异常或数据错乱。
+- 不支持多对多（一写多读 / 多写一读要自己控制同步）
+- 管道有内部缓冲区（默认大约 1024 bytes），写太快而读太慢可能造成阻塞。
+  - 写入速度太快，缓冲区满了 → write() 会阻塞等待
+  - 读取速度太慢，缓冲区空了 → read() 会阻塞等待
+- 管道本质是双向绑定，下面两种方式实际上并没有区别。
+- 使用 `ObjectInputStream` 等对象流包装管道可以达到响应需求。
+
+  ```java
+  import java.io.IOException;
+  import java.io.PipedReader;
+  import java.io.PipedWriter;
+
+  public class PipeCharExample {
+      public static void main(String[] args) throws IOException {
+          PipedReader reader = new PipedReader();
+          PipedWriter writer = new PipedWriter();
+
+          // 连接
+          writer.connect(reader);
+
+          // 或
+          reader.connect(writer);
+
+      }
+  }
+
+  ```
+
+- 使用缓冲流包装管道
+  
+  ```java
+  BufferedReader reader = new BufferedReader(new InputStreamReader(pipedInputStream));
+  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pipedOutputStream));
+  // 或
+  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
+  BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+
+    // 线程1：写入数据
+  Thread thread1 = new Thread(() -> {
+      try {
+          bufferedOutputStream.write("Data from Thread 1".getBytes());
+          bufferedOutputStream.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+  });
+
+  // 线程2：读取数据
+  Thread thread2 = new Thread(() -> {
+      try {
+          byte[] buffer = new byte[1024];
+          int bytesRead = bufferedInputStream.read(buffer);
+          String data = new String(buffer, 0, bytesRead);
+          System.out.println("Thread 2 received: " + data);
+          bufferedInputStream.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+  });
+
+  ```
+
+- 示例：
+
+  ```java
+  import java.io.*;
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+  import java.util.concurrent.atomic.AtomicInteger;
+
+  /**
+   * 管道通信，多生产者、消费者示例。
+   */
+  public class AdvancedPipeDemo {
+      public static void main(String[] args) throws IOException {
+          // 管道流
+          PipedOutputStream pos = new PipedOutputStream();
+          PipedInputStream pis = new PipedInputStream(pos);
+
+          BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos));
+          BufferedReader reader = new BufferedReader(new InputStreamReader(pis));
+
+          // 线程池管理
+          ExecutorService executor = Executors.newFixedThreadPool(5);
+
+          // 生产者数量
+          int producerCount = 3;
+          // 活跃生产者计数器
+          AtomicInteger activeProducers = new AtomicInteger(producerCount);
+
+          // 启动多个生产者
+          for (int i = 1; i <= producerCount; i++) {
+              executor.execute(new Producer(writer, "Producer-" + i, activeProducers));
+          }
+
+          // 启动多个消费者
+          int consumerCount = 2;
+          for (int i = 1; i <= consumerCount; i++) {
+              executor.execute(new Consumer(reader, activeProducers, "Consumer-" + i));
+          }
+
+          executor.shutdown();
+      }
+
+      static class Producer implements Runnable {
+          private final BufferedWriter writer;
+          private final String name;
+          private final AtomicInteger activeProducers;
+
+          public Producer(BufferedWriter writer, String name, AtomicInteger activeProducers) {
+              this.writer = writer;
+              this.name = name;
+              this.activeProducers = activeProducers;
+          }
+
+          @Override
+          public void run() {
+              try {
+                  for (int i = 1; i <= 5; i++) {
+                      synchronized (writer) { // 多生产者写入时要同步
+                          String message = name + " - Data " + i;
+                          writer.write(message + "\n");
+                          writer.flush();
+                          System.out.println(name + " wrote: " + message);
+                      }
+                      Thread.sleep((long) (Math.random() * 400)); // 模拟不稳定生产速度
+                  }
+              } catch (IOException | InterruptedException e) {
+                  e.printStackTrace();
+              } finally {
+                  // 生产者结束时减少活跃数量
+                  if (activeProducers.decrementAndGet() == 0) {
+                      // 最后一个生产者发送关闭信号
+                      try {
+                          synchronized (writer) {
+                              writer.write("EOF\n");
+                              writer.flush();
+                          }
+                          writer.close();
+                      } catch (IOException e) {
+                          e.printStackTrace();
+                      }
+                  }
+              }
+          }
+      }
+
+      static class Consumer implements Runnable {
+          private final BufferedReader reader;
+          private final AtomicInteger activeProducers;
+          private final String name;
+
+          public Consumer(BufferedReader reader, AtomicInteger activeProducers, String name) {
+              this.reader = reader;
+              this.activeProducers = activeProducers;
+              this.name = name;
+          }
+
+          @Override
+          public void run() {
+              try {
+                  String line;
+                  while ((line = reader.readLine()) != null) {
+                      if ("EOF".equals(line)) {
+                          System.out.println(name + " detected EOF, exiting.");
+                          break;
+                      }
+                      System.out.println(name + " processed: " + line);
+                      Thread.sleep((long) (Math.random() * 500)); // 模拟消费速度
+                  }
+              } catch (IOException | InterruptedException e) {
+                  // 注意可能在管道关闭时抛出异常，需要优雅处理
+                  System.out.println(name + " encountered exception and exits: " + e.getMessage());
+              } finally {
+                  try {
+                      reader.close(); // 消费者自己关闭流（idempotent，安全）
+                  } catch (IOException e) {
+                      e.printStackTrace();
+                  }
+              }
+          }
+      }
+  }
+  ```
 
 ---
 
