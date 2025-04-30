@@ -100,34 +100,7 @@ public class MyCallable implements Callable<String> {
 > 提供任务队列与拒绝策略，增强系统弹性；
 > 支持 任务调度、延迟执行、周期性执行。
 
-- 任务队列：如果使用有界队列，当队列饱和时并超过最大线程数时就会执行拒绝策略；而如果使用无界队列，因为任务队列永远都可以添加任务，所以设置 maximumPoolSize 没有任何意义。
-  - ArrayBlockingQueue：一个由数组结构组成的有界阻塞队列（数组结构可配合指针实现一个环形队列）。
-  - LinkedBlockingQueue： 一个由链表结构组成的有界阻塞队列，在未指明容量时，容量默认为 Integer.MAX_VALUE。
-  - PriorityBlockingQueue： 一个支持优先级排序的无界阻塞队列，对元素没有要求，可以实现 Comparable 接口也可以提供 Comparator 来对队列中的元素进行比较。跟时间没有任何关系，仅仅是按照优先级取任务。
-  - DelayQueue：类似于PriorityBlockingQueue，是二叉堆实现的无界优先级阻塞队列。要求元素都实现 Delayed 接口，通过执行时延从队列中提取任务，时间没到任务取不出来。
-  - SynchronousQueue： 一个不存储元素的阻塞队列，消费者线程调用 take() 方法的时候就会发生阻塞，直到有一个生产者线程生产了一个元素，消费者线程就可以拿到这个元素并返回；生产者线程调用 put() 方法的时候也会发生阻塞，直到有一个消费者线程消费了一个元素，生产者才会返回。
-  - LinkedBlockingDeque： 使用双向队列实现的有界双端阻塞队列。双端意味着可以像普通队列一样 FIFO（先进先出），也可以像栈一样 FILO（先进后出）。
-  - LinkedTransferQueue： 它是ConcurrentLinkedQueue、LinkedBlockingQueue 和 SynchronousQueue 的结合体，但是把它用在 ThreadPoolExecutor 中，和 LinkedBlockingQueue 行为一致，但是是无界的阻塞队列。
-- 拒绝策略：当线程池的线程数达到最大线程数时，需要执行拒绝策略。拒绝策略需要实现 RejectedExecutionHandler 接口，并实现 rejectedExecution(Runnable r, ThreadPoolExecutor executor) 方法。
-  - AbortPolicy（默认）：丢弃任务并抛出 RejectedExecutionException 异常。
-  - CallerRunsPolicy：由调用线程处理该任务。
-  - DiscardPolicy：丢弃任务，但是不抛出异常。可以配合这种模式进行自定义的处理方式。
-  - DiscardOldestPolicy：丢弃队列最早的未处理任务，然后重新尝试执行任务。
-
-- ThreadPoolExecutor(推荐)
-  - 线程数设置依据：
-    - CPU 密集型(任务主要消耗 CPU 资源（如计算、压缩、加密）)：CPU核心数 + 1
-    - IO 密集型(任务主要在执行 IO 操作（如文件读写、数据库、网络请求）)：2 * CPU核心数 或更多
-  - 构造方法：
-    - corePoolSize（必需）：核心线程数。默认情况下，核心线程会一直存活，但是当将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
-    - maximumPoolSize（必需）：线程池所能容纳的最大线程数。当活跃线程数达到该数值后，后续的新任务将会阻塞。
-    - keepAliveTime（必需）：线程闲置超时时长。如果超过该时长，非核心线程就会被回收。如果将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
-    - unit（必需）：指定 keepAliveTime 参数的时间单位。常用的有：TimeUnit.MILLISECONDS（毫秒）、TimeUnit.SECONDS（秒）、TimeUnit.MINUTES（分）。
-    - workQueue（必需）：任务队列。通过线程池的 execute() 方法提交的 Runnable 对象将存储在该参数中。其采用阻塞队列实现。
-    - threadFactory（可选）：线程工厂。用于指定为线程池创建新线程的方式。
-    - handler（可选）：拒绝策略。当达到最大线程数时需要执行的饱和策略。
-
-    ```java
+```java
     public ThreadPoolExecutor(int corePoolSize,
                               int maximumPoolSize,
                               long keepAliveTime,
@@ -162,24 +135,6 @@ public class MyCallable implements Callable<String> {
         executor.shutdown(); // 设置线程池的状态为SHUTDOWN，然后中断所有没有正在执行任务的线程
         executor.shutdownNow(); // 设置线程池的状态为 STOP，然后尝试停止所有的正在执行或暂停任务的线程，并返回等待执行任务的列表
     ```
-
-- 使用 Executors 工具类(不推荐)：
-  - 定长线程池（FixedThreadPool）
-    - 特点：只有核心线程，线程数量固定，执行完立即回收，任务队列为链表结构的有界队列。
-    - 应用场景：控制线程最大并发数。
-  - 定时线程池（ScheduledThreadPool ）
-    - 特点：核心线程数量固定，非核心线程数量无限，执行完闲置 10ms 后回收，任务队列为延时阻塞队列。
-    - 应用场景：执行定时或周期性的任务。
-  - 可缓存线程池（CachedThreadPool）
-    - 特点：无核心线程，非核心线程数量无限，执行完闲置 60s 后回收，任务队列为不存储元素的阻塞队列。
-    - 应用场景：执行大量、耗时少的任务。
-  - 单线程化线程池（SingleThreadExecutor）
-    - 特点：只有 1 个核心线程，无非核心线程，执行完立即回收，任务队列为链表结构的有界队列。
-    - 应用场景：不适合并发但可能引起 IO 阻塞性及影响 UI 线程响应的操作，如数据库操作、文件操作等。
-
-- 不推荐使用 Executors 工具类的原因
-  - FixedThreadPool 和 SingleThreadExecutor：主要问题是堆积的请求处理队列均采用 LinkedBlockingQueue(无界)，可能会耗费非常大的内存，甚至 OOM。
-  - CachedThreadPool 和 ScheduledThreadPool：主要问题是线程数最大数是 Integer.MAX_VALUE，可能会创建数量非常多的线程，甚至 OOM。
 
 ---
 
@@ -826,7 +781,1059 @@ public class ProducerConsumerWithCondition {
 }
 ```
 
-### 5.3 阻塞队列 BlockingQueue
+### 5.3 管道通信
+
+> Java 管道是一种特殊的流，用于在线程之间传递数据。它通常由一个输入管道流和一个输出管道流组成。输入管道流用于从一个线程读取数据，而输出管道流用于将数据写入另一个线程。这两个管道流之间的数据传输是单向的，即数据只能从输入流传输到输出流。
+
+- `PipedInputStream` / `PipedOutputStream`
+  - 字节流
+- `PipedReader` / `PipedWriter`
+  - 字符流
+- 只能线程间通信，不能单线程使用。
+- 一次只能一个线程写，一个线程读，否则可能抛异常或数据错乱。
+- 不支持多对多（一写多读 / 多写一读要自己控制同步）
+- 管道有内部缓冲区（默认大约 1024 bytes），写太快而读太慢可能造成阻塞。
+  - 写入速度太快，缓冲区满了 → write() 会阻塞等待
+  - 读取速度太慢，缓冲区空了 → read() 会阻塞等待
+- 管道本质是双向绑定，下面两种方式实际上并没有区别。
+- 使用 `ObjectInputStream` 等对象流包装管道可以达到响应需求。
+
+  ```java
+  import java.io.IOException;
+  import java.io.PipedReader;
+  import java.io.PipedWriter;
+
+  public class PipeCharExample {
+      public static void main(String[] args) throws IOException {
+          PipedReader reader = new PipedReader();
+          PipedWriter writer = new PipedWriter();
+
+          // 连接
+          writer.connect(reader);
+
+          // 或
+          reader.connect(writer);
+
+      }
+  }
+
+  ```
+
+- 使用缓冲流包装管道
+  
+  ```java
+  BufferedReader reader = new BufferedReader(new InputStreamReader(pipedInputStream));
+  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pipedOutputStream));
+  // 或
+  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
+  BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+
+    // 线程1：写入数据
+  Thread thread1 = new Thread(() -> {
+      try {
+          bufferedOutputStream.write("Data from Thread 1".getBytes());
+          bufferedOutputStream.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+  });
+
+  // 线程2：读取数据
+  Thread thread2 = new Thread(() -> {
+      try {
+          byte[] buffer = new byte[1024];
+          int bytesRead = bufferedInputStream.read(buffer);
+          String data = new String(buffer, 0, bytesRead);
+          System.out.println("Thread 2 received: " + data);
+          bufferedInputStream.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+  });
+
+  ```
+
+- 示例：
+
+  ```java
+  import java.io.*;
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+  import java.util.concurrent.atomic.AtomicInteger;
+
+  /**
+   * 管道通信，多生产者、消费者示例。
+   */
+  public class AdvancedPipeDemo {
+      public static void main(String[] args) throws IOException {
+          // 管道流
+          PipedOutputStream pos = new PipedOutputStream();
+          PipedInputStream pis = new PipedInputStream(pos);
+
+          BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos));
+          BufferedReader reader = new BufferedReader(new InputStreamReader(pis));
+
+          // 线程池管理
+          ExecutorService executor = Executors.newFixedThreadPool(5);
+
+          // 生产者数量
+          int producerCount = 3;
+          // 活跃生产者计数器
+          AtomicInteger activeProducers = new AtomicInteger(producerCount);
+
+          // 启动多个生产者
+          for (int i = 1; i <= producerCount; i++) {
+              executor.execute(new Producer(writer, "Producer-" + i, activeProducers));
+          }
+
+          // 启动多个消费者
+          int consumerCount = 2;
+          for (int i = 1; i <= consumerCount; i++) {
+              executor.execute(new Consumer(reader, activeProducers, "Consumer-" + i));
+          }
+
+          executor.shutdown();
+      }
+
+      static class Producer implements Runnable {
+          private final BufferedWriter writer;
+          private final String name;
+          private final AtomicInteger activeProducers;
+
+          public Producer(BufferedWriter writer, String name, AtomicInteger activeProducers) {
+              this.writer = writer;
+              this.name = name;
+              this.activeProducers = activeProducers;
+          }
+
+          @Override
+          public void run() {
+              try {
+                  for (int i = 1; i <= 5; i++) {
+                      synchronized (writer) { // 多生产者写入时要同步
+                          String message = name + " - Data " + i;
+                          writer.write(message + "\n");
+                          writer.flush();
+                          System.out.println(name + " wrote: " + message);
+                      }
+                      Thread.sleep((long) (Math.random() * 400)); // 模拟不稳定生产速度
+                  }
+              } catch (IOException | InterruptedException e) {
+                  e.printStackTrace();
+              } finally {
+                  // 生产者结束时减少活跃数量
+                  if (activeProducers.decrementAndGet() == 0) {
+                      // 最后一个生产者发送关闭信号
+                      try {
+                          synchronized (writer) {
+                              writer.write("EOF\n");
+                              writer.flush();
+                          }
+                          writer.close();
+                      } catch (IOException e) {
+                          e.printStackTrace();
+                      }
+                  }
+              }
+          }
+      }
+
+      static class Consumer implements Runnable {
+          private final BufferedReader reader;
+          private final AtomicInteger activeProducers;
+          private final String name;
+
+          public Consumer(BufferedReader reader, AtomicInteger activeProducers, String name) {
+              this.reader = reader;
+              this.activeProducers = activeProducers;
+              this.name = name;
+          }
+
+          @Override
+          public void run() {
+              try {
+                  String line;
+                  while ((line = reader.readLine()) != null) {
+                      if ("EOF".equals(line)) {
+                          System.out.println(name + " detected EOF, exiting.");
+                          break;
+                      }
+                      System.out.println(name + " processed: " + line);
+                      Thread.sleep((long) (Math.random() * 500)); // 模拟消费速度
+                  }
+              } catch (IOException | InterruptedException e) {
+                  // 注意可能在管道关闭时抛出异常，需要优雅处理
+                  System.out.println(name + " encountered exception and exits: " + e.getMessage());
+              } finally {
+                  try {
+                      reader.close(); // 消费者自己关闭流（idempotent，安全）
+                  } catch (IOException e) {
+                      e.printStackTrace();
+                  }
+              }
+          }
+      }
+  }
+  ```
+
+---
+
+## 六、线程池与并发工具类（JUC）
+
+### 6.1 Executor 框架
+
+- 接口
+  - `Executor`: 最基础接口，只有 execute(Runnable command) 方法（负责提交任务）
+  - `ExecutorService`：继承 Executor，增加了生命周期管理（shutdown、awaitTermination等）+ 提交任务（submit支持Future）
+  - `ScheduledExecutorService`: 定时任务线程池接口（可以延迟执行、周期性执行任务）
+- 实现类：
+  - `Executors`: 工厂工具类，用来快速创建各种常用线程池
+  - `ThreadPoolExecutor`: 最核心、最强大的线程池实现（通常推荐直接用它）
+  - `ScheduledThreadPoolExecutor`: 定时/周期性任务专用线程池
+  - `FixedThreadPool`: 固定大小线程池,适合任务量稳定的场景
+  - `CachedThreadPool`: 缓存线程池、自动扩容，适合任务量突发型、短时任务
+  - `SingleThreadExecutor`: 单线程线程池,保证顺序执行任务
+  - `ScheduledThreadPool`: 定时任务线程池,支持延迟、定时
+
+### 6.2 ThreadPoolExecutor 参数详解
+
+- ThreadPoolExecutor(推荐)
+  - 线程数设置依据：
+    - CPU 密集型(任务主要消耗 CPU 资源（如计算、压缩、加密）)：CPU核心数 + 1
+    - IO 密集型(任务主要在执行 IO 操作（如文件读写、数据库、网络请求）)：2 * CPU核心数 或更多
+  - 构造方法：
+    - corePoolSize（必需）：核心线程数。默认情况下，核心线程会一直存活，但是当将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
+    - maximumPoolSize（必需）：线程池所能容纳的最大线程数。当活跃线程数达到该数值后，后续的新任务将会阻塞。
+    - keepAliveTime（必需）：线程闲置超时时长。如果超过该时长，非核心线程就会被回收。如果将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
+    - unit（必需）：指定 keepAliveTime 参数的时间单位。常用的有：TimeUnit.MILLISECONDS（毫秒）、TimeUnit.SECONDS（秒）、TimeUnit.MINUTES（分）。
+    - workQueue（必需）：任务队列。通过线程池的 execute() 方法提交的 Runnable 对象将存储在该参数中。其采用阻塞队列实现。
+      - 任务队列：如果使用有界队列，当队列饱和时并超过最大线程数时就会执行拒绝策略；而如果使用无界队列，因为任务队列永远都可以添加任务，所以设置 maximumPoolSize 没有任何意义。
+        - ArrayBlockingQueue：一个由数组结构组成的有界阻塞队列（数组结构可配合指针实现一个环形队列）。
+        - LinkedBlockingQueue： 一个由链表结构组成的有界阻塞队列，在未指明容量时，容量默认为 Integer.MAX_VALUE。
+        - PriorityBlockingQueue： 一个支持优先级排序的无界阻塞队列，对元素没有要求，可以实现 Comparable 接口也可以提供 Comparator 来对队列中的元素进行比较。跟时间没有任何关系，仅仅是按照优先级取任务。
+        - DelayQueue：类似于PriorityBlockingQueue，是二叉堆实现的无界优先级阻塞队列。要求元素都实现 Delayed 接口，通过执行时延从队列中提取任务，时间没到任务取不出来。
+        - SynchronousQueue： 一个不存储元素的阻塞队列，消费者线程调用 take() 方法的时候就会发生阻塞，直到有一个生产者线程生产了一个元素，消费者线程就可以拿到这个元素并返回；生产者线程调用 put() 方法的时候也会发生阻塞，直到有一个消费者线程消费了一个元素，生产者才会返回。
+        - LinkedBlockingDeque： 使用双向队列实现的有界双端阻塞队列。双端意味着可以像普通队列一样 FIFO（先进先出），也可以像栈一样 FILO（先进后出）。
+        - LinkedTransferQueue： 它是ConcurrentLinkedQueue、LinkedBlockingQueue 和 SynchronousQueue 的结合体，但是把它用在 ThreadPoolExecutor 中，和 LinkedBlockingQueue 行为一致，但是是无界的阻塞队列。
+    - threadFactory（可选）：线程工厂。用于指定为线程池创建新线程的方式。
+    - handler（可选）：拒绝策略。当达到最大线程数时需要执行的饱和策略。
+      - 拒绝策略：当线程池的线程数达到最大线程数时，需要执行拒绝策略。拒绝策略需要实现`RejectedExecutionHandler` 接口，并实现 rejectedExecution(Runnable r, ThreadPoolExecutor executor) 方法。
+        - AbortPolicy（默认）：丢弃任务并抛出 RejectedExecutionException 异常。
+        - CallerRunsPolicy：由调用线程处理该任务。
+        - DiscardPolicy：丢弃任务，但是不抛出异常。可以配合这种模式进行自定义的处理方式。
+        - DiscardOldestPolicy：丢弃队列最早的未处理任务，然后重新尝试执行任务。
+
+- ThreadPoolExecutor 示例
+
+  ```java
+  import java.util.concurrent.*;
+  import java.util.concurrent.atomic.AtomicInteger;
+
+  /**
+   * 线程池工厂 - 生产级写法
+   */
+  public class CustomThreadPoolFactory {
+
+      /**
+       * 创建通用线程池
+       *
+       * @param poolName        线程池名称前缀
+       * @param corePoolSize    核心线程数
+       * @param maxPoolSize     最大线程数
+       * @param queueCapacity   队列容量
+       * @param keepAliveSecond 空闲线程存活时间（秒）
+       * @return 自定义线程池
+       */
+      public static ThreadPoolExecutor createThreadPool(String poolName,
+                                                        int corePoolSize,
+                                                        int maxPoolSize,
+                                                        int queueCapacity,
+                                                        int keepAliveSecond) {
+          return new ThreadPoolExecutor(
+                  corePoolSize,
+                  maxPoolSize,
+                  keepAliveSecond,
+                  TimeUnit.SECONDS,
+                  new LinkedBlockingQueue<>(queueCapacity),
+                  new NamedThreadFactory(poolName),
+                  new CustomRejectedExecutionHandler(poolName)
+          );
+      }
+
+      /**
+       * 自定义线程工厂 - 给线程起名字
+       */
+      static class NamedThreadFactory implements ThreadFactory {
+          private final AtomicInteger threadNumber = new AtomicInteger(1);
+          private final String namePrefix;
+
+          NamedThreadFactory(String namePrefix) {
+              this.namePrefix = namePrefix + "-pool-";
+          }
+
+          @Override
+          public Thread newThread(Runnable r) {
+              Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
+              if (t.isDaemon()) {
+                  t.setDaemon(false);
+              }
+              if (t.getPriority() != Thread.NORM_PRIORITY) {
+                  t.setPriority(Thread.NORM_PRIORITY);
+              }
+              return t;
+          }
+      }
+
+      /**
+       * 自定义拒绝策略 - 打日志、报警
+       */
+      static class CustomRejectedExecutionHandler implements RejectedExecutionHandler {
+          private final String poolName;
+
+          CustomRejectedExecutionHandler(String poolName) {
+              this.poolName = poolName;
+          }
+
+          @Override
+          public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+              System.err.println("【线程池拒绝执行】线程池：" + poolName
+                      + " 当前活跃线程数：" + executor.getActiveCount()
+                      + " 队列大小：" + executor.getQueue().size());
+              // 这里可以扩展，比如发送报警通知
+              throw new RejectedExecutionException("任务被线程池拒绝执行：" + poolName);
+          }
+      }
+  }
+  ```
+
+### 6.3 常见线程池类型,使用 `Executors` 工具类(不推荐)
+
+- 定长线程池（FixedThreadPool）
+  - 特点：只有核心线程，线程数量固定，执行完立即回收，任务队列为链表结构的有界队列。
+  - 应用场景：控制线程最大并发数。
+- 定时线程池（ScheduledThreadPool ）
+  - 特点：核心线程数量固定，非核心线程数量无限，执行完闲置 10ms 后回收，任务队列为延时阻塞队列。
+  - 应用场景：执行定时或周期性的任务。
+- 可缓存线程池（CachedThreadPool）
+  - 特点：无核心线程，非核心线程数量无限，执行完闲置 60s 后回收，任务队列为不存储元素的阻塞队列。
+  - 应用场景：执行大量、耗时少的任务。
+- 单线程化线程池（SingleThreadExecutor）
+  - 特点：只有 1 个核心线程，无非核心线程，执行完立即回收，任务队列为链表结构的有界队列。
+  - 应用场景：不适合并发但可能引起 IO 阻塞性及影响 UI 线程响应的操作，如数据库操作、文件操作等。
+- 不推荐使用 Executors 工具类的原因
+  - FixedThreadPool 和 SingleThreadExecutor：主要问题是堆积的请求处理队列均采用 LinkedBlockingQueue(无界)，可能会耗费非常大的内存，甚至 OOM。
+  - CachedThreadPool 和 ScheduledThreadPool：主要问题是线程数最大数是 Integer.MAX_VALUE，可能会创建数量非常多的线程，甚至 OOM。
+
+### 6.4 Fork/Join 框架
+
+> Fork/Join 是 Java7 引入的一个 高效并行计算框架。主要目标是：把大任务拆成小任务并行执行，最后合并结果。
+> 适合需要 递归划分 的任务。任务能拆分成很多小块，可以并发处理。
+
+- 工作窃取算法
+  - 核心概念：
+    - 每个线程维护一个双端队列（Deque）。
+    - 线程自己总是从 头部（栈顶）取任务执行。
+    - 如果自己空闲了，会从其他线程的尾部偷任务来做！（Work Stealing）
+  - 好处：
+    - 减少线程间争抢，提升 CPU 利用率。
+    - 动态负载均衡，避免有的线程闲着，有的线程很忙。
+
+- `ForkJoinPool`
+  - 线程池，专门管理 Fork/Join 任务
+- `ForkJoinTask<V>`
+  - 抽象任务类，支持 fork 和 join
+- `RecursiveTask`
+  - 有返回值的任务（常用）
+- `RecursiveAction`
+  - 无返回值的任务
+
+- 示例：查找文件
+
+  ```java
+  import java.io.File;
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.concurrent.RecursiveTask;
+
+  public class FileSearchTask extends RecursiveTask<List<File>> {
+
+      private static final int THRESHOLD = 10; // 子目录超过多少就分割
+      private File directory;
+      private String keyword;
+
+      public FileSearchTask(File directory, String keyword) {
+          this.directory = directory;
+          this.keyword = keyword;
+      }
+
+      @Override
+      protected List<File> compute() {
+          List<File> result = new ArrayList<>();
+          List<FileSearchTask> subTasks = new ArrayList<>();
+
+          File[] files = directory.listFiles();
+          if (files != null) {
+              List<File> dirs = new ArrayList<>();
+
+              for (File file : files) {
+                  if (file.isDirectory()) {
+                      dirs.add(file);
+                  } else {
+                      if (file.getName().contains(keyword)) {
+                          result.add(file);
+                      }
+                  }
+              }
+
+              if (dirs.size() > THRESHOLD) {
+                  // 目录太多，拆分子任务
+                  for (File dir : dirs) {
+                      FileSearchTask task = new FileSearchTask(dir, keyword);
+                      task.fork();
+                      subTasks.add(task);
+                  }
+
+                  for (FileSearchTask task : subTasks) {
+                      result.addAll(task.join());
+                  }
+              } else {
+                  // 目录少，直接递归
+                  for (File dir : dirs) {
+                      result.addAll(new FileSearchTask(dir, keyword).compute());
+                  }
+              }
+          }
+
+          return result;
+      }
+  }
+
+  import java.io.File;
+  import java.util.List;
+  import java.util.concurrent.ForkJoinPool;
+
+  public class FileSearchExample {
+      public static void main(String[] args) {
+          // 要搜索的根目录
+          File rootDir = new File("D:/BigDataFolder"); 
+
+          // 关键词
+          String keyword = "report";
+
+          ForkJoinPool pool = new ForkJoinPool();
+
+          FileSearchTask task = new FileSearchTask(rootDir, keyword);
+
+          long start = System.currentTimeMillis();
+
+          List<File> matchingFiles = pool.invoke(task);
+
+          long end = System.currentTimeMillis();
+
+          System.out.println("找到 " + matchingFiles.size() + " 个匹配文件");
+          for (File file : matchingFiles) {
+              System.out.println(file.getAbsolutePath());
+          }
+
+          System.out.println("搜索耗时: " + (end - start) + " ms");
+
+          pool.shutdown();
+      }
+  }
+
+  ```
+
+- 示例：组合 `CompletableFuture` 异步访问远程API
+
+  ```java
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.concurrent.*;
+
+  public class ForkJoinWithFutureTask extends RecursiveTask<List<String>> {
+
+      private static final int THRESHOLD = 1000;
+      private List<String> data;
+      private int start;
+      private int end;
+
+      private ExecutorService httpExecutor = Executors.newCachedThreadPool();
+
+      public ForkJoinWithFutureTask(List<String> data, int start, int end) {
+          this.data = data;
+          this.start = start;
+          this.end = end;
+      }
+
+      @Override
+      protected List<String> compute() {
+          if (end - start <= THRESHOLD) {
+              List<CompletableFuture<String>> futures = new ArrayList<>();
+              for (int i = start; i < end; i++) {
+                  String item = data.get(i);
+                  // 每个数据提交异步处理
+                  CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> remoteCall(item), httpExecutor);
+                  futures.add(future);
+              }
+
+              // 收集所有结果
+              List<String> results = new ArrayList<>();
+              for (CompletableFuture<String> future : futures) {
+                  results.add(future.join()); // 阻塞等待
+              }
+              return results;
+          } else {
+              int mid = (start + end) / 2;
+              ForkJoinWithFutureTask left = new ForkJoinWithFutureTask(data, start, mid);
+              ForkJoinWithFutureTask right = new ForkJoinWithFutureTask(data, mid, end);
+
+              left.fork();
+              List<String> rightResult = right.compute();
+              List<String> leftResult = left.join();
+
+              List<String> total = new ArrayList<>();
+              total.addAll(leftResult);
+              total.addAll(rightResult);
+              return total;
+          }
+      }
+
+      private String remoteCall(String input) {
+          // 模拟远程API调用
+          try {
+              Thread.sleep(100); // 假设每个远程请求耗时100ms
+          } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+          }
+          return "Processed-" + input;
+      }
+  }
+
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.concurrent.ForkJoinPool;
+
+  public class ForkJoinWithFutureExample {
+      public static void main(String[] args) {
+          List<String> dataList = new ArrayList<>();
+          for (int i = 0; i < 10_000; i++) {
+              dataList.add("Item-" + i);
+          }
+
+          ForkJoinPool pool = new ForkJoinPool();
+
+          ForkJoinWithFutureTask task = new ForkJoinWithFutureTask(dataList, 0, dataList.size());
+
+          long start = System.currentTimeMillis();
+
+          List<String> result = pool.invoke(task);
+
+          long end = System.currentTimeMillis();
+
+          System.out.println("处理完成, 总数: " + result.size());
+          System.out.println("耗时: " + (end - start) + " ms");
+
+          pool.shutdown();
+      }
+  }
+  ```
+
+### 6.5 并发辅助工具类
+
+- `CountDownLatch`
+  - 用途：一组线程等待其他线程完成某件事情后再继续执行。
+  - 特点：一次性，计数器只能递减到0，不能重置。
+  - 当前线程阻塞等待子线程执行完毕，直到计数器为0或超时，才继续执行。
+
+  ```java
+  import java.util.concurrent.CountDownLatch;
+
+  public class CountDownLatchExample {
+      public static void main(String[] args) throws InterruptedException {
+          int threadCount = 5;
+          CountDownLatch latch = new CountDownLatch(threadCount);
+
+          for (int i = 0; i < threadCount; i++) {
+              new Thread(() -> {
+                  System.out.println(Thread.currentThread().getName() + " 执行任务完成");
+                  latch.countDown(); // 任务完成，计数器减1
+              }).start();
+          }
+
+          latch.await(); // 等待所有线程完成
+          System.out.println("所有线程执行完毕，主线程继续！");
+      }
+  }
+  ```
+
+- `CyclicBarrier`
+  - 用途：让一组线程互相等待，到达屏障点后一起继续执行。
+  - 特点：可以循环使用，计数器可以重置。
+
+  ```java
+  import java.util.concurrent.BrokenBarrierException;
+  import java.util.concurrent.CyclicBarrier;
+
+  public class CyclicBarrierExample {
+      public static void main(String[] args) {
+          int threadCount = 3;
+          CyclicBarrier barrier = new CyclicBarrier(threadCount, () -> {
+              System.out.println("所有线程到达屏障，统一开始下一阶段任务！");
+          });
+
+          for (int i = 0; i < threadCount; i++) {
+              new Thread(() -> {
+                  try {
+                      System.out.println(Thread.currentThread().getName() + " 准备完毕，等待其他人...");
+                      barrier.await(); // 到达屏障点，等待
+                      System.out.println(Thread.currentThread().getName() + " 开始执行后续任务！");
+                  } catch (InterruptedException | BrokenBarrierException e) {
+                      e.printStackTrace();
+                  }
+              }).start();
+          }
+      }
+  }
+
+  ```
+
+- `Semaphore`
+  - 用途：控制同时访问的线程数量。
+  - 特点：信号量可以控制资源数量，获取/释放。
+
+  ```java
+  import java.util.concurrent.Semaphore;
+
+  public class SemaphoreExample {
+      public static void main(String[] args) {
+          Semaphore semaphore = new Semaphore(3); // 允许最多3个线程同时访问
+
+          for (int i = 0; i < 10; i++) {
+              new Thread(() -> {
+                  try {
+                      semaphore.acquire(); // 获取许可
+                      System.out.println(Thread.currentThread().getName() + " 获得许可，正在执行...");
+                      Thread.sleep(2000); // 模拟任务执行
+                      System.out.println(Thread.currentThread().getName() + " 释放许可");
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  } finally {
+                      semaphore.release(); // 释放许可
+                  }
+              }).start();
+          }
+      }
+  }
+
+  ```
+
+- `Exchanger`
+  - 用途：两个线程之间交换数据。
+  - 特点：一对一交换，双方到达后交换数据。
+
+  ```java
+  import java.util.concurrent.Exchanger;
+
+  public class ExchangerExample {
+      public static void main(String[] args) {
+          Exchanger<String> exchanger = new Exchanger<>();
+
+          new Thread(() -> {
+              try {
+                  String data = "数据A";
+                  System.out.println("线程1准备交换：" + data);
+                  String result = exchanger.exchange(data);
+                  System.out.println("线程1交换得到：" + result);
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
+              }
+          }).start();
+
+          new Thread(() -> {
+              try {
+                  String data = "数据B";
+                  System.out.println("线程2准备交换：" + data);
+                  String result = exchanger.exchange(data);
+                  System.out.println("线程2交换得到：" + result);
+              } catch (InterruptedException e) {
+                  e.printStackTrace();
+              }
+          }).start();
+      }
+  }
+  ```
+
+- `Phaser`
+  - 用途：比 CyclicBarrier 更强大的阶段同步器，支持动态增加/注销参与线程。
+  - 特点：多阶段、多批次。
+
+  ```java
+  import java.util.concurrent.Phaser;
+
+  public class PhaserExample {
+      public static void main(String[] args) {
+          Phaser phaser = new Phaser(3); // 3个参与者
+
+          for (int i = 0; i < 3; i++) {
+              int finalI = i;
+              new Thread(() -> {
+                  System.out.println("线程" + finalI + " 完成第1阶段任务");
+                  phaser.arriveAndAwaitAdvance(); // 第一阶段
+                  System.out.println("线程" + finalI + " 完成第2阶段任务");
+                  phaser.arriveAndAwaitAdvance(); // 第二阶段
+              }).start();
+          }
+      }
+  }
+  ```
+
+- 总结：
+
+工具类 | 主要功能 | 特点
+---|---|---
+CountDownLatch | 等待其他线程完成 | 一次性，计数器不能重置
+CyclicBarrier | 多线程到达屏障一起出发 | 可循环重用
+Semaphore | 控制并发访问数量 | 获取/释放许可
+Exchanger | 线程间交换数据 | 成对出现
+Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
+
+---
+
+## 七、并发集合
+
+### 7.1 Map
+
+- ConcurrentHashMap
+  - JDK7：分段锁机制
+  - JDK8：CAS + 链表/红黑树优化
+  - ConcurrentHashMap（分段锁/JDK8优化）
+  - 核心数据结构
+    - val 和 next 都是 volatile 保证可见性
+    - CAS + synchronized 控制并发
+
+    ```java
+    // Node 是基础结构
+    static class Node<K,V> implements Map.Entry<K,V> {
+        final int hash; // 缓存 key 的哈希值，加快定位
+        final K key; 
+        volatile V val; 
+        volatile Node<K,V> next; // 链表结构
+    }
+    ```
+
+  - 核心成员变量
+
+    ```java
+    // 真正存储数据的数组
+    transient volatile Node<K,V>[] table;
+
+    // 扩容时使用的下一张表
+    private transient volatile Node<K,V>[] nextTable;
+
+    // 记录大小变化的辅助对象
+    private transient volatile long baseCount;
+
+    /**
+     * sizeCtl 控制初始化、扩容的阈值 
+     * <0：正在扩容，
+     * -1 表示某个线程正在初始化表 
+     * =0：未初始化 0：正常情况下，表示下一次扩容的阈值
+     *  */ 
+    private transient volatile int sizeCtl;
+
+    // transferIndex 扩容时使用的分段迁移索引
+    private transient volatile int transferIndex;
+    ```
+
+  - put 流程（核心）：
+
+    ```arduino
+    put(key, val)
+        ↓
+    计算 hash
+        ↓
+    定位 bucket（table[i]）
+        ↓
+    判断：
+    - 桶为空 → CAS 直接插入
+    - 桶非空且锁空闲 → synchronized 加锁链表/树
+        ↓
+    链表插入 or 树插入
+        ↓
+    插入后判断链表是否需要树化（TREEIFY_THRESHOLD）
+        ↓
+    插入后判断是否需要扩容（size > threshold）
+
+    ```
+
+  - push 步骤解析
+
+    步骤 | 细节
+    ---|---
+    ① hash | 对 key 做扰动处理，提高随机性，减少冲突。
+    ② 定位桶 | (n - 1) & hash 快速定位数组下标（n是数组长度）。
+    ③ CAS 尝试插入 | 如果 table[i] 是 null，直接 CAS 插入，提高并发性能。
+    ④ synchronized 锁定桶 | 如果冲突，锁住链表头节点进行链表操作。
+    ⑤ 链表/树插入 | 如果链表太长，超过 8，且数组大于 MIN_TREEIFY_CAPACITY，转成红黑树,前提是数组长度必须 >= 64，否则优先扩容。
+    ⑥ 统计节点数 | 更新 baseCount。
+    ⑦ 判断扩容 | 超过 sizeCtl 则触发扩容 transfer。
+
+    ```java
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
+
+    final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
+        if (key == null || value == null) throw new NullPointerException();
+        int binCount = 0;
+        // 循环查找，直到找到位置或 table 为空
+        for (Node<K,V>[] tab = table;;) {
+            Node<K,V> f; int n, i, fh;
+            // 若table 为空，初始化 table
+            if (tab == null || (n = tab.length) == 0)
+                tab = initTable(); // 初始化 table
+            // 计算 hash 值，定位桶位置 若桶为空，CAS 插入
+            else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+                // 桶为空，CAS 插入
+                if (casTabAt(tab, i, null, new Node<K,V>(hash, key, value, null)))
+                    break; // 插入成功则退出循环
+            }
+            // 若桶被 MOVED，正在扩容
+            else if ((fh = f.hash) == MOVED)
+                tab = helpTransfer(tab, f); // 正在扩容，协助迁移
+            
+            // hash 值对应桶不为空k 存在冲突，进入 synchronized 块锁定该 bin 的头结点
+            else {
+                V oldVal = null;
+                synchronized (f) { // 锁定首节点，防止并发修改
+                    if (tabAt(tab, i) == f) {
+                        if (fh >= 0) { // 是链表
+                            binCount = 1;
+                            for (Node<K,V> e = f;; ++binCount) {
+                                K ek;
+                                // 链表匹配，替换旧值，退出循环
+                                if (e.hash == hash &&
+                                    ((ek = e.key) == key || (ek != null && key.equals(ek)))) {
+                                    oldVal = e.val;
+                                    if (!onlyIfAbsent)
+                                        e.val = value;
+                                    break;
+                                }
+                                // 尾插新节点
+                                Node<K,V> pred = e;
+                                if ((e = e.next) == null) {
+                                    pred.next = new Node<K,V>(hash, key, value, null);
+                                    break;
+                                }
+                            }
+                        }
+                        else if (f instanceof TreeBin) {
+                            // 红黑树插入逻辑
+                        }
+                    }
+                }
+                // 链表长度超过阈值（8）转为红黑树
+                if (binCount >= TREEIFY_THRESHOLD)
+                    // 链表转换红黑树, 前提是数组长度必须 >= 64，否则优先扩容。
+                    treeifyBin(tab, i); // 链表转换红黑树
+                // 若hash 值重复，则返回被替换旧值
+                if (oldVal != null)
+                    return oldVal;
+                break;
+            }
+        }
+        addCount(1L, binCount); // 更新元素数量并检查是否触发扩容
+        return null;
+    }
+    ```
+
+  - 扩容机制（transfer）
+    - 每个线程搬自己的一部分桶，分段扩容,多线程并行搬迁数据
+    - 使用 `transferIndex` 变量做分段
+    - 给原数组翻倍
+    - 低位（e.hash & oldCap == 0）留在原位置
+    - 高位（否则）迁移到 newTable[i + oldCap]
+
+    ```java
+    // 负责将 tab 中的数据迁移到 nextTable 中（容量是原来的 2 倍）
+    private final void transfer(Node<K,V>[] tab, Node<K,V> f) {
+        int n = tab.length; // 原 table 长度
+        Node<K,V>[] nextTab = nextTable;
+
+        // 如果目标表不存在，则初始化
+        if (nextTab == null) {
+            try {
+                // 新表容量是原表的两倍
+                nextTab = (Node<K,V>[]) new Node<?,?>[n << 1];
+            } catch (Throwable ex) {
+                // 创建失败，放弃扩容，避免死循环
+                sizeCtl = Integer.MAX_VALUE;
+                return;
+            }
+            // 将新表保存到成员变量
+            nextTable = nextTab;
+            // 初始化迁移的起始索引为旧表长度，从尾部开始抢任务
+            transferIndex = n;
+        }
+
+        // stride 决定每个线程迁移的最小单元，防止粒度太细
+        int stride = (n > NCPU) ? (n >>> 3) / NCPU : n; // NCPU 是 CPU 核数
+        if (stride < MIN_TRANSFER_STRIDE)
+            stride = MIN_TRANSFER_STRIDE;
+
+        // i 是迁移用的工作索引，从高位向低位遍历
+        int bound = transferIndex;
+        boolean advance = true;     // 是否向前推进索引 i
+        boolean finishing = false;  // 是否进入最终迁移完成收尾阶段
+
+        // 遍历旧表
+        for (int i = n - 1; i >= 0 || finishing; ) {
+            Node<K,V> e; // 当前槽位元素
+            int fh;      // 当前节点的 hash 值
+
+            if (advance) {
+                --i;
+                // 当前槽为空，标记为已迁移，放 ForwardingNode 占位
+                if (i >= 0 && (e = tabAt(tab, i)) == null) {
+                    advance = casTabAt(tab, i, null, new ForwardingNode<K,V>(nextTab));
+                }
+                // 当前槽是 ForwardingNode，说明迁移过了，跳过
+                else if (i >= 0 && (fh = e.hash) == MOVED) {
+                    advance = true;
+                }
+                // 否则说明此槽位未迁移，进入同步块处理
+                else {
+                    synchronized (e) {
+                        // 再次确认 tab[i] 没变，避免被其他线程抢先修改
+                        if (tabAt(tab, i) == e) {
+                            // 定义两组链表：低位（放 i）和高位（放 i + n）
+                            Node<K,V> loHead = null, loTail = null;
+                            Node<K,V> hiHead = null, hiTail = null;
+                            Node<K,V> next;
+
+                            // 遍历链表，分类拆分到 low/high 链表中
+                            do {
+                                next = e.next;
+                                if ((e.hash & n) == 0) { // hash & n == 0 -> 低位链表
+                                    if (loTail == null)
+                                        loHead = e;
+                                    else
+                                        loTail.next = e;
+                                    loTail = e;
+                                } else { // 否则放高位链表
+                                    if (hiTail == null)
+                                        hiHead = e;
+                                    else
+                                        hiTail.next = e;
+                                    hiTail = e;
+                                }
+                            } while ((e = next) != null);
+
+                            // 将低位链表放到新表索引 i
+                            setTabAt(nextTab, i, loHead);
+                            // 将高位链表放到新表索引 i + n
+                            setTabAt(nextTab, i + n, hiHead);
+                            // 将旧表位置标记为已迁移（ForwardingNode）
+                            setTabAt(tab, i, new ForwardingNode<K,V>(nextTab));
+                            advance = true;
+                        }
+                    }
+                }
+            }
+            // 如果当前线程没有可处理的任务区间，进入收尾阶段
+            else if (--bound <= 0) {
+                finishing = true;
+            }
+        }
+
+        // 迁移完成后，清理变量
+        nextTable = null;
+        table = nextTab;
+        // 更新扩容阈值（0.75 倍新容量）
+        sizeCtl = (n << 1) - (n >>> 2);
+    }
+    ```
+
+  - 树化机制（红黑树转换）
+    - 链表长度超过 8 且数组长度大于 64 时，把链表转成红黑树（TreeBin）
+    - 树操作基本是 `synchronized` 加锁下做
+    - 搜索复杂度由 `O(n)` 变成 `O(logn)`
+    - TreeNode 继承自 Node，增加了 prev、parent 等指针；
+    - 红黑树是通过双向链表 + 平衡逻辑插入实现的；
+    - TreeBin 是包装红黑树的容器，封装了平衡逻辑。
+
+    ```java
+    final void treeifyBin(Node<K,V>[] tab, int index) {
+        Node<K,V> b; 
+        //  桶为空，直接返回
+        if (tab == null || (b = tabAt(tab, index)) == null || b.hash < 0)
+            return;
+        // 桶不为空，且长度大于 8，且数组长度大于 64，则进行树化
+        synchronized (b) {
+            // 桶为空，直接返回
+            if (tabAt(tab, index) == b) {
+                TreeNode<K,V> hd = null, tl = null;
+                // 遍历链表，将链表节点转换成红黑树
+                for (Node<K,V> e = b; e != null; e = e.next) {
+                    TreeNode<K,V> p = new TreeNode<>(e.hash, e.key, e.val, null);
+                    if ((p.prev = tl) == null)
+                        hd = p;
+                    else
+                        tl.next = p;
+                    tl = p;
+                }
+                setTabAt(tab, index, new TreeBin<>(hd)); // 红黑树包装器
+            }
+        }
+    }
+    ```
+
+  - 线程安全解析
+    - 存放节点数组 `table`、节点连接字段：val、值：· 都由 `volatile` 修饰保证关键字段可见性（如 table, val, next）
+    - `CAS(Compare And Swap)` 保证 `table[i]` 空桶插入无锁
+    - `synchronized` | 保证链表/树插入安全
+
+- HashTable(弃用)
+  - 虽然线程安全，但全表加锁，性能极差。
+
+### 7.2 List、Set
+
+- CopyOnWriteArrayList
+  - 基于数组的线程安全 List。
+  - 写时复制：修改操作（如 add, remove）会先复制原数组，再修改副本，最后替换原引用。
+  - 通过加锁和复制数组的方式，写操作不会影响正在读取的线程，适用于 读多写少 的并发场景。
+  
+  ```java
+    // add 方法内部简化
+    public boolean add(E e) {
+        final ReentrantLock lock = this.lock;
+        lock.lock();  // 加锁保证线程安全
+        try {
+            Object[] elements = getArray();
+            int len = elements.length;
+            Object[] newElements = Arrays.copyOf(elements, len + 1); // 复制数组
+            newElements[len] = e; // 添加元素
+            setArray(newElements); // 替换原数组
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+  ```
+
+- CopyOnWriteArraySet
+  - 基于 CopyOnWriteArrayList 实现的线程安全 Set。
+  - 元素唯一性通过 list.contains() 判断实现。
+  
+  ```java
+    public boolean add(E e) {
+        return al.contains(e) ? false : al.add(e);
+    }
+  ```
+
+### 7.3 Queue
+
+#### 7.3.1 阻塞队列 BlockingQueue
 
 - BlockingQueue 是 java.util.concurrent 包下的接口。
 - 是一种支持阻塞的队列：
@@ -1051,7 +2058,7 @@ public class ProducerConsumerWithCondition {
   System.out.println(deque.takeLast());  // 取出 last
   ```
 
-### 5.4 非阻塞队列
+#### 7.3.2 非阻塞队列
 
 - `ConcurrentLinkedQueue`
   - 基于链表实现的线程安全、非阻塞队列。
@@ -1090,300 +2097,930 @@ public class ProducerConsumerWithCondition {
   }
   ```
 
-### 5.5 管道通信
+- `ConcurrentLinkedDeque`
+  - 基于非阻塞算法（`lock-free`） 的双端队列（`Deque`），是线程安全的，支持并发地从 两端插入/移除元素。
+  - 它使用的是 CAS（Compare-And-Swap）算法 来实现线程安全，避免了传统的加锁操作。
+  - 用于高并发场景，无需容量限制，任务不需等
 
-> Java 管道是一种特殊的流，用于在线程之间传递数据。它通常由一个输入管道流和一个输出管道流组成。输入管道流用于从一个线程读取数据，而输出管道流用于将数据写入另一个线程。这两个管道流之间的数据传输是单向的，即数据只能从输入流传输到输出流。
+    ```java
+    import java.util.concurrent.*;
 
-- `PipedInputStream` / `PipedOutputStream`
-  - 字节流
-- `PipedReader` / `PipedWriter`
-  - 字符流
-- 只能线程间通信，不能单线程使用。
-- 一次只能一个线程写，一个线程读，否则可能抛异常或数据错乱。
-- 不支持多对多（一写多读 / 多写一读要自己控制同步）
-- 管道有内部缓冲区（默认大约 1024 bytes），写太快而读太慢可能造成阻塞。
-  - 写入速度太快，缓冲区满了 → write() 会阻塞等待
-  - 读取速度太慢，缓冲区空了 → read() 会阻塞等待
-- 管道本质是双向绑定，下面两种方式实际上并没有区别。
-- 使用 `ObjectInputStream` 等对象流包装管道可以达到响应需求。
+    public class ConcurrentLinkedDequeDemo {
 
-  ```java
-  import java.io.IOException;
-  import java.io.PipedReader;
-  import java.io.PipedWriter;
+        public static void main(String[] args) {
+            ConcurrentLinkedDeque<Integer> deque = new ConcurrentLinkedDeque<>();
 
-  public class PipeCharExample {
-      public static void main(String[] args) throws IOException {
-          PipedReader reader = new PipedReader();
-          PipedWriter writer = new PipedWriter();
+            // 启动两个线程同时添加元素
+            Runnable producer = () -> {
+                for (int i = 0; i < 10; i++) {
+                    deque.addFirst(i); // 从头部添加
+                    System.out.println(Thread.currentThread().getName() + " addFirst: " + i);
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException ignored) {}
+                }
+            };
 
-          // 连接
-          writer.connect(reader);
+            Runnable consumer = () -> {
+                for (int i = 0; i < 10; i++) {
+                    Integer val = deque.pollLast(); // 从尾部取出
+                    System.out.println(Thread.currentThread().getName() + " pollLast: " + val);
+                    try {
+                        Thread.sleep(80);
+                    } catch (InterruptedException ignored) {}
+                }
+            };
 
-          // 或
-          reader.connect(writer);
+            new Thread(producer, "Producer").start();
+            new Thread(consumer, "Consumer").start();
+        }
+    }
 
-      }
-  }
-
-  ```
-
-- 使用缓冲流包装管道
-  
-  ```java
-  BufferedReader reader = new BufferedReader(new InputStreamReader(pipedInputStream));
-  BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pipedOutputStream));
-  // 或
-  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
-  BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-
-    // 线程1：写入数据
-  Thread thread1 = new Thread(() -> {
-      try {
-          bufferedOutputStream.write("Data from Thread 1".getBytes());
-          bufferedOutputStream.close();
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
-  });
-
-  // 线程2：读取数据
-  Thread thread2 = new Thread(() -> {
-      try {
-          byte[] buffer = new byte[1024];
-          int bytesRead = bufferedInputStream.read(buffer);
-          String data = new String(buffer, 0, bytesRead);
-          System.out.println("Thread 2 received: " + data);
-          bufferedInputStream.close();
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
-  });
-
-  ```
-
-- 示例：
-
-  ```java
-  import java.io.*;
-  import java.util.concurrent.ExecutorService;
-  import java.util.concurrent.Executors;
-  import java.util.concurrent.atomic.AtomicInteger;
-
-  /**
-   * 管道通信，多生产者、消费者示例。
-   */
-  public class AdvancedPipeDemo {
-      public static void main(String[] args) throws IOException {
-          // 管道流
-          PipedOutputStream pos = new PipedOutputStream();
-          PipedInputStream pis = new PipedInputStream(pos);
-
-          BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos));
-          BufferedReader reader = new BufferedReader(new InputStreamReader(pis));
-
-          // 线程池管理
-          ExecutorService executor = Executors.newFixedThreadPool(5);
-
-          // 生产者数量
-          int producerCount = 3;
-          // 活跃生产者计数器
-          AtomicInteger activeProducers = new AtomicInteger(producerCount);
-
-          // 启动多个生产者
-          for (int i = 1; i <= producerCount; i++) {
-              executor.execute(new Producer(writer, "Producer-" + i, activeProducers));
-          }
-
-          // 启动多个消费者
-          int consumerCount = 2;
-          for (int i = 1; i <= consumerCount; i++) {
-              executor.execute(new Consumer(reader, activeProducers, "Consumer-" + i));
-          }
-
-          executor.shutdown();
-      }
-
-      static class Producer implements Runnable {
-          private final BufferedWriter writer;
-          private final String name;
-          private final AtomicInteger activeProducers;
-
-          public Producer(BufferedWriter writer, String name, AtomicInteger activeProducers) {
-              this.writer = writer;
-              this.name = name;
-              this.activeProducers = activeProducers;
-          }
-
-          @Override
-          public void run() {
-              try {
-                  for (int i = 1; i <= 5; i++) {
-                      synchronized (writer) { // 多生产者写入时要同步
-                          String message = name + " - Data " + i;
-                          writer.write(message + "\n");
-                          writer.flush();
-                          System.out.println(name + " wrote: " + message);
-                      }
-                      Thread.sleep((long) (Math.random() * 400)); // 模拟不稳定生产速度
-                  }
-              } catch (IOException | InterruptedException e) {
-                  e.printStackTrace();
-              } finally {
-                  // 生产者结束时减少活跃数量
-                  if (activeProducers.decrementAndGet() == 0) {
-                      // 最后一个生产者发送关闭信号
-                      try {
-                          synchronized (writer) {
-                              writer.write("EOF\n");
-                              writer.flush();
-                          }
-                          writer.close();
-                      } catch (IOException e) {
-                          e.printStackTrace();
-                      }
-                  }
-              }
-          }
-      }
-
-      static class Consumer implements Runnable {
-          private final BufferedReader reader;
-          private final AtomicInteger activeProducers;
-          private final String name;
-
-          public Consumer(BufferedReader reader, AtomicInteger activeProducers, String name) {
-              this.reader = reader;
-              this.activeProducers = activeProducers;
-              this.name = name;
-          }
-
-          @Override
-          public void run() {
-              try {
-                  String line;
-                  while ((line = reader.readLine()) != null) {
-                      if ("EOF".equals(line)) {
-                          System.out.println(name + " detected EOF, exiting.");
-                          break;
-                      }
-                      System.out.println(name + " processed: " + line);
-                      Thread.sleep((long) (Math.random() * 500)); // 模拟消费速度
-                  }
-              } catch (IOException | InterruptedException e) {
-                  // 注意可能在管道关闭时抛出异常，需要优雅处理
-                  System.out.println(name + " encountered exception and exits: " + e.getMessage());
-              } finally {
-                  try {
-                      reader.close(); // 消费者自己关闭流（idempotent，安全）
-                  } catch (IOException e) {
-                      e.printStackTrace();
-                  }
-              }
-          }
-      }
-  }
-  ```
-
----
-
-## 六、线程池与并发工具类（JUC）
-
-### 6.1 Executor 框架
-
-- 接口：`Executor`, `ExecutorService`, `ScheduledExecutorService`
-- 实现类：`ThreadPoolExecutor`, `ScheduledThreadPoolExecutor`,FixedThreadPool、CachedThreadPool、SingleThreadExecutor、ScheduledThreadPool
-
-### 6.2 ThreadPoolExecutor 参数详解
-
-- corePoolSize、maximumPoolSize、keepAliveTime、workQueue
-- 拒绝策略（CallerRunsPolicy 等）
-
-### 6.3 常见线程池类型
-
-- `FixedThreadPool`, `CachedThreadPool`, `SingleThreadExecutor`, `ScheduledThreadPool`
-
-### 6.4 Fork/Join 框架
-
-- 工作窃取算法
-- `RecursiveTask` 和 `RecursiveAction`
-
-### 6.5 并发辅助工具类
-
-- `CountDownLatch`, `CyclicBarrier`, `Semaphore`, `Exchanger`, `Phaser`
-
----
-
-## 七、并发集合
-
-### 7.1 ConcurrentHashMap
-
-- JDK7：分段锁机制
-- JDK8：CAS + 链表/红黑树优化
-- ConcurrentHashMap（分段锁/JDK8优化）
-
-- CopyOnWriteArrayList / CopyOnWriteArraySet
-
-- ConcurrentLinkedQueue / ConcurrentLinkedDeque
-
-- BlockingQueue 系列（各种实现适用场景）
-
-### 7.2 CopyOnWriteArrayList / CopyOnWriteArraySet
-
-- 读写分离
-- 适用读多写少场景
-
-### 7.3 ConcurrentLinkedQueue / ConcurrentLinkedDeque
-
-- 无锁队列，CAS实现
-
-### 7.4 各种 BlockingQueue
-
-- `ArrayBlockingQueue`, `LinkedBlockingQueue`
-- `PriorityBlockingQueue`, `SynchronousQueue`, `DelayQueue`
+    ```
 
 ---
 
 ## 八、高级并发特性
 
-### 8.1 ThreadLocal
+### 8.1 内存语义与原子性工具
 
-- 实现原理
-- 内存泄漏问题
-- `InheritableThreadLocal` 用于子线程继承
+- volatile 保证可见性与禁止指令重排。
+- Atomic* 类利用 CAS 和内存屏障实现原子性。
+- `LongAdder` 高并发下分段累加，减轻竞争。
+  - 为解决AtomicLong 在高并发场景下，由于所有线程竞争同一个 value 字段，CAS 失败率高、重试频繁，性能下降严重。
+  - LongAdder 的设计思想 —— 分段累加（Striped64）
+    - 将一个变量拆分为多个变量（Cell）分段累加，最后求和时汇总结果。
+    - 将并发压力分散到多个变量上，从而减少争抢。
 
-### 8.2 并发设计模式
+### 8.2 CAS（Compare-And-Swap）机制
+
+- 核心原理
+  - CAS操作包含三个参数：
+    - 内存位置（V）：要更新的变量的内存地址。
+    - 预期值（A）：调用者认为当前的内存值应该是多少。
+    - 新值（B）：如果预期值匹配，将要写入的新值。
+  - 操作流程：
+    - 读取内存位置V的当前值。
+    - 比较当前值是否等于预期值A。
+    - 如果相等，则将内存位置V的值更新为新值B。
+    - 如果不相等，则操作失败，不修改内存值。
+- 优点
+  - 无锁（Lock-Free）：CAS避免了传统锁机制（如互斥锁），减少了线程阻塞和上下文切换的开销。
+  - 高并发性能：适合高并发场景，尤其是读多写少的场景。
+  - 简单高效：CAS操作通常由硬件直接支持，执行速度快。
+  - Java 原子类、大多数并发容器均基于此构建。
+- 缺点
+  - ABA问题：
+    - 问题描述：线程1读取值为A，线程2将值从A改为B再改回A，线程1的CAS操作会认为值未被修改，实际上中间发生了变化。
+    - 解决方法：使用版本号或时间戳（如AtomicStampedReference在Java中）。
+  - 自旋开销：
+    - 如果CAS失败，线程可能需要循环重试（自旋），在高竞争场景下可能导致CPU资源浪费。
+  - 仅限单一变量：
+    - CAS适合操作单个变量，无法直接处理多个变量的原子操作。
+- 典型应用
+  - 原子类：
+    - Java中的AtomicInteger、AtomicReference等使用CAS实现线程安全的计数器或引用更新。
+    - 示例：AtomicInteger的incrementAndGet()方法内部通过CAS实现无锁自增。
+  - 无锁数据结构：
+    - 无锁队列、栈等数据结构常使用CAS来确保线程安全。
+  - 乐观锁：
+  - 数据库中的乐观锁机制常基于CAS思想，通过版本号检查数据是否被修改。
+
+### 8.3 自旋锁、自适应锁
+
+- 自旋锁：
+  - 定义
+    - 自旋锁是一种忙等待（busy-waiting）的锁机制，线程在尝试获取锁失败时不会立即阻塞，而是通过循环（自旋）反复检查锁是否可用，直到获取锁或达到某种条件。
+  - 核心原理
+    - 线程尝试通过原子操作（如CAS）获取锁。
+    - 如果锁被占用，线程不会进入阻塞状态，而是循环检查锁的状态（忙等待）。
+    - 一旦锁被释放，线程通过CAS尝试再次获取锁。
+  - 优点
+    - 低延迟：在锁持有时间短的场景下，自旋锁避免了线程阻塞和上下文切换的开销，获取锁的延迟较低。
+    - 简单实现：自旋锁的实现逻辑简单，适合轻量级同步。
+    - 适合高并发：在多核系统中，短时间的自旋等待可以快速响应锁的释放。
+  - 缺点
+    - CPU浪费：自旋期间线程占用CPU资源，长时间自旋可能导致性能下降。
+    - 不适合长任务：如果锁持有时间长，自旋的开销会显著增加。
+    - 公平性问题：自旋锁不保证先来先得，可能导致某些线程长时间无法获取锁。
+  - 适用场景
+    - 锁持有时间短：如临界区操作很快（几条指令）。
+    - 多核系统：自旋锁在多核CPU上效果更好，因为自旋线程可以在其他核心上运行。
+    - 高并发低冲突：竞争不激烈时，自旋锁效率高。
+- 自适应锁：根据前次等待情况动态决定是否自旋。
+  - 定义
+    - 自适应锁是一种优化后的锁机制，能够根据运行时环境（如锁竞争程度、锁持有时间）动态调整线程的行为，结合自旋和阻塞的优点，以提高性能和资源利用率。
+  - 核心原理
+    - 自适应锁在尝试获取锁时，会根据历史数据或当前竞争情况决定是自旋等待还是阻塞。
+    - 如果锁很快会被释放（短临界区），线程选择自旋；如果锁持有时间较长或竞争激烈，线程选择阻塞，进入等待队列。
+    - 实现通常依赖运行时信息（如锁的统计数据）或操作系统支持。
+  - 典型实现
+    - Java的synchronized：JVM中的synchronized关键字在高版本中使用了自适应锁优化。
+      - 初始阶段：尝试自旋（轻量级锁，基于CAS）。
+      - 竞争加剧：升级为重量级锁（阻塞，依赖操作系统互斥量）。
+  - 自适应自旋：如Linux内核的自适应自旋锁，根据锁持有者的状态（是否在运行）决定自旋还是休眠。
+
+### 8.4 并发设计模式
 
 - Immutable Object（不可变对象）
+  - 定义
+    - 不可变对象是指对象在创建后其状态（字段值）不可修改的对象。所有字段通常是final的，且对象的行为通过返回新实例或只读操作实现。
+  - 核心原理
+    - 无状态修改：对象的字段在构造时初始化，之后不可更改。
+    - 线程安全：由于状态不可变，多个线程访问时无需同步机制，避免了并发问题。
+    - 副本机制：修改操作通过创建新对象实现，而不是修改原有对象。
+  - 使用场景
+    - 需要共享只读数据（如配置、常量）。
+    - 高并发场景下需要确保线程安全。
+    - 简化并发逻辑，避免锁的使用。
+  - 优点
+    - 线程安全：天然线程安全，无需加锁。
+    - 简化设计：减少并发控制的复杂性。
+    - 缓存：不可变对象适合作为缓存键或共享资源。
+  - 缺点
+    - 内存开销：每次修改生成新对象，可能增加内存使用。
+    - 性能开销：对象创建和垃圾回收可能影响性能。
+    - 适用性有限：不适合需要频繁修改状态的场景。
 - Guarded Suspension（保护暂停）
+  - 定义
+    - 保护暂停模式用于线程间的协作，当某个条件不满足时，线程暂停（等待），直到条件满足后再继续执行。通常结合锁和条件变量（如wait/notify或Condition）实现。
+  - 核心原理
+    - 条件检查：线程检查是否满足执行条件（如队列不为空）。
+    - 暂停等待：条件不满足时，线程调用wait()进入等待状态，释放锁。
+    - 唤醒继续：其他线程修改条件后通过notify()或notifyAll()唤醒等待线程。
+  - 使用场景
+    - 生产者-消费者模型（如阻塞队列）。
+    - 线程需要等待特定条件（如资源可用）。
+    - 异步任务的同步等待。
+  - 优点
+    - 高效协作：线程仅在条件满足时运行，避免忙等待。
+    - 资源节约：等待线程释放锁，降低CPU占用。
+    - 灵活性：可处理复杂的条件逻辑。
+  - 缺点
+    - 复杂性：需要正确管理锁和条件变量，易出错。
+    - 死锁风险：不当使用可能导致死锁或线程饥饿。
+    - 通知丢失：如果notify调用早于wait，可能导致线程永久等待。
 - Two-phase Termination（二阶段终止）
+  - 定义
+    - 二阶段终止模式用于优雅地终止线程，确保线程在收到终止信号后能完成必要清理工作（如释放资源、保存状态）后再退出。
+  - 核心原理
+    - 第一阶段：发送终止信号（如设置标志或中断）。
+    - 第二阶段：线程检查终止信号，执行清理逻辑后退出。
+    - 通常使用volatile标志或线程中断机制实现。
+  - 使用场景
+    - 需要安全关闭线程（如服务线程、定时任务）。
+    - 线程需要释放资源（如文件句柄、数据库连接）。
+    - 长期运行的任务（如事件循环）。
+  - 优点
+    - 优雅终止：确保线程安全退出，避免资源泄漏。
+    - 可控性：允许线程完成必要工作后再停止。
+  - 缺点
+    - 延迟退出：清理工作可能导致终止延迟。
+    - 复杂清理：若清理逻辑复杂，可能增加维护成本。
+    - 中断局限：依赖中断机制时，可能因线程阻塞而失效。
 - Worker Thread（工作线程）
+  - 定义
+    - 工作线程模式通过一组线程（线程池）处理任务，任务被提交到任务队列，工作线程从队列中获取任务并执行，适用于异步任务处理。
+  - 核心原理
+    - 任务队列：任务被放入共享队列（如阻塞队列）。
+    - 工作线程：多个线程从队列中取出任务执行。
+    - 线程复用：线程执行完任务后继续处理下一个任务，避免频繁创建线程。
+  - 使用场景
+    - 高并发任务处理（如Web服务器、数据库查询）。
+    - 需要异步执行的任务（如日志记录、消息处理）。
+    - 线程池管理（如Java的ExecutorService）。
+  - 优点
+    - 高效性：线程复用减少创建/销毁开销。
+    - 可扩展：通过调整线程池大小适应负载。
+    - 解耦：任务提交与执行分离，简化设计。
+  - 缺点
+    - 资源竞争：任务队列可能成为瓶颈。
+    - 复杂管理：需要管理线程池大小和任务优先级。
+    - 任务延迟：高负载下任务可能排队等待。
 - Thread-per-Message（消息分发）
+  - 定义
+    - 消息分派模式为每个消息或请求分配一个独立线程处理，强调任务的独立性和异步性。通常用于高吞吐量的请求处理场景。
+  - 核心原理
+    - 消息触发：每个消息/请求到达时，创建一个新线程处理。
+    - 独立执行：线程处理完消息后终止，无需复用。
+    - 异步处理：消息发送者无需等待处理完成。
+  - 使用场景
+    - 轻量级、短生命周期的任务（如网络请求处理）。
+    - 高吞吐量场景（如聊天服务器、事件驱动系统）。
+    - 不需要线程复用的场景。
+  - 优点
+    - 简单性：每个任务独立，逻辑清晰。
+    - 隔离性：任务间互不影响，适合错误隔离。
+    - 高吞吐量：适合快速响应的场景。
+  - 缺点
+    - 高开销：频繁创建/销毁线程导致性能开销。
+    - 资源限制：线程数过多可能耗尽系统资源。
+    - 不适合长任务：长时间运行的任务会导致线程堆积。
 
-### 高级并发模型与模式
+### 8.5 ThreadLocal
 
-- 并发设计模式：
+- 实现原理
+  - ThreadLocal 本身不存储数据，仅作为 ThreadLocalMap 的键。
+  - 每个线程的 ThreadLocalMap 是独立的，互不影响。
+  - ThreadLocalMap 使用弱引用存储键（ThreadLocal 对象），以便在 ThreadLocal 实例被垃圾回收时清理无用条目（但可能导致内存泄漏，详见下文）。
+  - 底层原理：Thread 类中有一个 ThreadLocalMap 成员。
+    - 每个线程（Thread 对象）内部维护一个 ThreadLocalMap 实例，ThreadLocalMap 是一个定制化的哈希表，键是 ThreadLocal 对象，值是线程的变量副本。
+    - ThreadLocalMap 由 ThreadLocal 类内部定义，存储在 Thread 类的 threadLocals 字段中。
+  - 操作流程：
+    - 设置值：调用 ThreadLocal.set(T value) 时，ThreadLocal 会获取当前线程的 ThreadLocalMap，将 (ThreadLocal, value) 键值对存入该 Map。
+    - 获取值：调用 ThreadLocal.get() 时，ThreadLocal 从当前线程的 ThreadLocalMap 中查找对应 ThreadLocal 的值。
+    - 移除值：调用 ThreadLocal.remove() 会从当前线程的 ThreadLocalMap 中删除对应 ThreadLocal 的键值对。
+  - 结构图
+  
+  ```text
+    Thread 1
+    ├── threadLocals: ThreadLocalMap
+    │    ├── Entry: [ThreadLocal1, Value1]
+    │    ├── Entry: [ThreadLocal2, Value2]
+    Thread 2
+    ├── threadLocals: ThreadLocalMap
+    │    ├── Entry: [ThreadLocal1, Value3]
+    │    ├── Entry: [ThreadLocal2, Value4]
+  ```
 
-  Immutable Object
+  - 使用场景：
+    - 用户会话信息：如 Web 应用中将用户 Session 信息绑定到当前线程，避免跨线程干扰。
+    - 数据库连接：为每个线程维护独立的数据库连接（如 Connection 对象），避免连接池竞争。
+    - 事务管理：在 Spring 框架中，ThreadLocal 用于管理事务上下文（如 Transaction 对象）。
 
-  Guarded Suspension
+- 内存泄漏问题
+  - 问题描述
+    - `ThreadLocal` 可能导致内存泄漏，特别是在线程池场景中。内存泄漏的根源在于 `ThreadLocalMap` 的设计和线程生命周期。
+    - `ThreadLocalMap` 的弱引用：
+    - `ThreadLocalMap` 的键（`ThreadLocal` 对象）是弱引用，当 `ThreadLocal` 实例没有强引用时，会被垃圾回收。但是，值（线程的变量副本）是强引用，即使 `ThreadLocal` 键被回收，值仍然保留在 `ThreadLocalMap` 中，导致内存无法释放。
+    - 线程池场景：
+      - 线程池中的线程是长期存活的，`ThreadLocalMap` 不会随着任务结束而销毁。
+      - 如果任务没有调用 `ThreadLocal.remove()` 清理值，`ThreadLocalMap` 中的键值对会一直存在，导致内存泄漏。
+    - 内存泄漏示意图：
 
-  Two-phase Termination
+    ```text
+    Thread (长期存活)
+    ├── threadLocals: ThreadLocalMap
+    │    ├── Entry: [null, Value] // ThreadLocal 被回收，值仍存留
+    ```
 
-  Worker Thread
+  - 解决方案：
+    - 显式清理：
+      - 在使用完 ThreadLocal 后，调用 remove() 方法清理 ThreadLocalMap 中的键值对。
+    - 使用 try-finally 块
+    - 避免长期存活的 ThreadLocal：
+      - 尽量将 ThreadLocal 实例定义为局部变量或短生命周期对象，避免长期持有。
+      - 使用静态 ThreadLocal 时需格外注意清理。
+    - 框架支持：
+      - 在 Spring 等框架中，事务管理器通常会自动清理 ThreadLocal（如 TransactionSynchronizationManager）。
+      - 使用线程池时，可以通过拦截器或任务包装器自动清理。
 
-  Thread-per-Message
+    ```java
+    import java.util.concurrent.ExecutorService;
+    import java.util.concurrent.Executors;
 
-### 8.3 CompletableFuture
+    public class ThreadLocalLeakExample {
+        private static final ThreadLocal<String> context = new ThreadLocal<>();
 
-- 异步编程模型
-- 链式调用 `.thenApply`, `.thenCompose`
-- 异常处理 `.handle`, `.exceptionally`
+        public static void main(String[] args) {
+            ExecutorService executor = Executors.newFixedThreadPool(2);
 
-### 8.4 响应式编程（基础）
+            for (int i = 0; i < 5; i++) {
+                executor.submit(() -> {
+                    try {
+                        context.set("Data-" + Thread.currentThread().getName());
+                        System.out.println("Thread: " + Thread.currentThread().getName() + ", Context: " + context.get());
+                    } finally {
+                        context.remove(); // 防止内存泄漏
+                    }
+                });
+            }
+
+            executor.shutdown();
+        }
+    }
+    ```
+
+- `InheritableThreadLocal` 用于子线程继承
+  - 定义
+    - `InheritableThreadLocal` 是 `ThreadLocal` 的子类，允许子线程继承父线程的 `ThreadLocal` 值。
+  - 核心原理
+    - Thread 类中有一个 `inheritableThreadLocals` 字段（类型也是 ThreadLocalMap），专门存储 `InheritableThreadLocal` 的键值对。
+    - 当创建子线程时，父线程的 `inheritableThreadLocals` 会被复制到子线程的 `inheritableThreadLocals` 中。
+    - 子线程可以直接访问继承的值，也可以覆盖自己的值，而不影响父线程。
+  - 优点
+    - 简化上下文传递：无需显式传递父线程的上下文。
+    - 线程隔离：子线程的修改不会影响父线程。
+    - 灵活性：支持自定义继承逻辑（通过重写 `childValue` 方法）。
+  - 缺点
+    - 有限继承：仅在子线程创建时复制，无法动态同步父线程的变化。
+    - 内存泄漏风险：与 `ThreadLocal` 类似，需注意清理 `inheritableThreadLocals。`
+    - 适用性有限：仅适合父子线程关系的场景。
+
+    ```java
+    public class InheritableThreadLocalExample {
+        private static final InheritableThreadLocal<String> context = new InheritableThreadLocal<>();
+
+        public static void main(String[] args) {
+            context.set("Parent-Context");
+
+            Thread child = new Thread(() -> {
+                System.out.println("Child thread context: " + context.get());
+                context.set("Child-Context"); // 子线程修改自己的副本
+                System.out.println("Child thread modified context: " + context.get());
+            });
+
+            child.start();
+
+            try {
+                child.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("Parent thread context: " + context.get()); // 父线程不受影响
+            context.remove(); // 清理
+        }
+    }
+    ```
+
+  - 自定义继承逻辑
+    - 可以通过重写 InheritableThreadLocal 的 childValue 方法自定义子线程的值：
+
+    ```java
+    InheritableThreadLocal<String> context = new InheritableThreadLocal<>() {
+        @Override
+        protected String childValue(String parentValue) {
+            return parentValue + "-Inherited"; // 自定义继承值
+        }
+    };
+    ```
+
+  - 总结
+
+    特性 |   说明
+    ---|---
+    实现原理    | 每个线程通过 ThreadLocalMap 存储独立的变量副本，ThreadLocal 作为键。
+    使用场景 |   用户会话、数据库连接、事务管理、格式化工具等需要线程隔离的场景。
+    内存泄漏问题 |   ThreadLocalMap 中的值可能是强引用，需显式调用 remove() 清理。
+    InheritableThreadLocal |   子线程可继承父线程的 ThreadLocal 值，适合上下文传递，需注意清理。
+
+### 8.6 VarHandle 类
+
+- 替代 Unsafe 的安全 API。
+- 提供对字段/数组/静态变量的原子性访问。
+- 支持内存语义控制，如 volatile、acquire/release 等。
+
+    ```java
+    import java.lang.invoke.MethodHandles;
+    import java.lang.invoke.VarHandle;
+
+    public class VarHandleDemo {
+        private int value = 0;
+        private static final VarHandle VALUE;
+
+        static {
+            try {
+                VALUE = MethodHandles.lookup().findVarHandle(VarHandleDemo.class, "value", int.class);
+            } catch (Exception e) {
+                throw new Error(e);
+            }
+        }
+
+        public void update() {
+            VALUE.set(this, 10); // 普通写
+            VALUE.getAndAdd(this, 5); // 原子加
+        }
+    }
+    ```
+
+### 8.7 CompletableFuture
+
+> `CompletableFuture` 是 Java 8 引入的一个强大的异步编程工具，位于 java.util.concurrent 包中，用于处理异步任务、组合任务以及异常处理。
+
+- 核心原理
+  - 异步执行：任务可以在独立的线程（通常由线程池如 `ForkJoinPool.commonPool()` 执行）运行，主线程无需等待任务完成。
+  - 完成触发：任务完成后，结果或异常会存储在 `CompletableFuture` 中，触发后续的回调操作。
+  - 灵活组合：支持链式调用、并行执行、组合多个任务等，适合复杂异步流程。
+- 关键方法
+  - 创建异步任务：
+    - `CompletableFuture.runAsync(Runnable, Executor)`：执行无返回值的异步任务。
+    - `CompletableFuture.supplyAsync(Supplier<T>, Executor)`：执行有返回值的异步任务。
+  - 链式调用
+    - `CompletableFuture.thenApply(Function<T, U>)`：用于简单的结果转换，函数返回普通值（非 `CompletableFuture`）。
+    - `CompletableFuture.thenCompose(Function<T, CompletableFuture<R>>)`：用于处理返回 `CompletableFuture` 的函数，自动“展平”结果，避免嵌套的 `CompletableFuture`。
+    - `CompletableFuture.thenAccept(Consumer<T>)`
+      - 用于处理结果，但无返回值。
+      - 方法由调用线程执行。
+    - `CompletableFuture.thenAcceptAsync(Consumer<T>)`
+    - 用于处理结果，但无返回值。
+    - 方法由子线程异步执行。
+
+    ```java
+    import java.util.concurrent.CompletableFuture;
+
+    public class CompletableFutureChaining {
+        public static void main(String[] args) {
+            // 模拟异步获取用户ID
+            CompletableFuture<Integer> userIdFuture = CompletableFuture.supplyAsync(() -> {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return 123;
+            });
+
+            // 使用 thenApply 转换结果
+            CompletableFuture<String> userNameFuture = userIdFuture.thenApply(id -> {
+                return "User-" + id; // 简单转换
+            });
+
+            // 使用 thenCompose 进行异步查询用户名
+            CompletableFuture<String> userDetailsFuture = userIdFuture.thenCompose(id -> {
+                return CompletableFuture.supplyAsync(() -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    return "Details of User-" + id; // 异步操作
+                });
+            });
+
+            // 输出结果
+            userNameFuture.thenAccept(name -> System.out.println("Name: " + name));
+            userDetailsFuture.thenAccept(details -> System.out.println("Details: " + details));
+
+            // 等待完成
+            userDetailsFuture.join();
+        }
+    }
+    ```
+
+  - 任务完成
+    - `CompletableFuture.complete(T value)`：手动完成任务，设置结果。
+    - `CompletableFuture.completeExceptionally(Throwable ex)`：手动标记任务异常。
+  - 异常处理
+    - `CompletableFuture.handle(BiFunction<T, Throwable, R>)`：成功或失败均执行,统一处理结果和异常。
+    - `CompletableFuture.exceptionally(Function<Throwable, T>)`：仅异常时执行,仅处理异常，提供默认值。
+
+    ```java
+    import java.util.concurrent.CompletableFuture;
+
+    public class CompletableFutureException {
+        public static void main(String[] args) {
+            // 模拟可能抛出异常的异步任务
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                if (true) { // 模拟异常
+                    throw new RuntimeException("Task failed!");
+                }
+                return "Success";
+            });
+
+            // 使用 exceptionally 处理异常
+            CompletableFuture<String> exceptionallyFuture = future.exceptionally(throwable -> {
+                System.out.println("Exceptionally caught: " + throwable.getMessage());
+                return "Recovered Value";
+            });
+
+            // 使用 handle 处理结果或异常
+            CompletableFuture<String> handleFuture = future.handle((result, throwable) -> {
+                if (throwable != null) {
+                    System.out.println("Handle caught: " + throwable.getMessage());
+                    return "Handled Value";
+                }
+                return result;
+            });
+
+            // 输出结果
+            exceptionallyFuture.thenAccept(result -> System.out.println("Exceptionally Result: " + result));
+            handleFuture.thenAccept(result -> System.out.println("Handle Result: " + result));
+
+            // 等待完成
+            handleFuture.join();
+        }
+    }
+    ```
+
+  - 获取结果
+    - `get()`：阻塞等待结果（不推荐）。
+    - `join()`：类似 get()，但抛出未检查异常。
+    - `getNow(T defaultValue)`：立即获取结果或默认值。
+  - 组合多个任务：
+    - `CompletableFuture.allOf(futures)`
+    - `CompletableFuture.anyOf(futures)`
+  - 合并多个任务结果
+    - `.thenCombine`
+    - `.thenAcceptBoth`：用于合并两个任务的结果。
+  - 最佳实践
+  - 优先使用线程池：通过 `supplyAsync(Supplier, Executor)` 指定自定义线程池（如 `Executors.newFixedThreadPool`），避免默认 `ForkJoinPool` 资源竞争。
+  - 避免阻塞调用：尽量使用链式调用和回调（如 `.thenAccept`），避免 `get()` 或 `join()`。
+  - 合理处理异常：总是使用 `.handle` 或 `.exceptionally` 捕获异常，避免未处理的异常导致程序失败。
+  - 注意任务编排：使用 `.thenCompose` 展平嵌套的 `CompletableFuture`，提高代码可读性。
+  - 资源管理：在高并发场景下，监控线程池大小和任务负载，避免资源耗尽。
+
+- 全局线程池配置最佳实践
+  ```java
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.scheduling.annotation.Async;
+  import org.springframework.scheduling.annotation.EnableAsync;
+  import org.springframework.web.bind.annotation.GetMapping;
+  import org.springframework.web.bind.annotation.RequestParam;
+  import org.springframework.web.bind.annotation.RestController;
+
+  import java.util.Arrays;
+  import java.util.List;
+  import java.util.concurrent.CompletableFuture;
+  import java.util.concurrent.Executor;
+
+  // 用户信息
+  record User(int id, String name) {}
+
+  // 订单
+  record Order(int orderId, double amount) {}
+
+  // 用户资料
+  record UserProfile(User user, List<Order> orders) {}
+
+  // 二次封装的 DTO
+  record UserProfileDTO(
+      int userId,
+      String userName,
+      List<Order> orders,
+      LocalDateTime timestamp, // 额外字段
+      String status // 额外字段
+  ) {}
+
+  /**
+   * 服务层：异步查询用户和订单
+  */
+  @Service
+  class UserService {
+      // 自定义线程池（通过 Spring 配置）
+      @Autowired
+      private Executor taskExecutor;
+
+      @Async
+      public CompletableFuture<User> fetchUserAsync(int userId) {
+          return CompletableFuture.supplyAsync(() -> {
+              try {
+                  Thread.sleep(1000); // 模拟网络延迟
+                  if (userId < 0) {
+                      throw new IllegalArgumentException("Invalid user ID");
+                  }
+                  return new User(userId, "User-" + userId);
+              } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new RuntimeException("User fetch interrupted", e);
+              }
+          }, taskExecutor);
+      }
+
+      @Async
+      public CompletableFuture<List<Order>> fetchOrdersAsync(int userId) {
+          return CompletableFuture.supplyAsync(() -> {
+              try {
+                  Thread.sleep(1000); // 模拟网络延迟
+                  return Arrays.asList(
+                      new Order(userId * 10 + 1, 100.0),
+                      new Order(userId * 10 + 2, 200.0)
+                  );
+              } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new RuntimeException("Order fetch interrupted", e);
+              }
+          }, taskExecutor);
+      }
+
+      // 二次封装逻辑
+      private UserProfileDTO encapsulateProfile(User user, List<Order> orders) {
+          return new UserProfileDTO(
+              user.id(),
+              user.name(),
+              orders,
+              LocalDateTime.now(), // 添加时间戳
+              orders.isEmpty() ? "No Orders" : "Has Orders" // 添加状态
+          );
+      }
+
+  }
+
+  /**
+   * 控制器：处理前端请求
+  */
+  @RestController
+  @EnableAsync
+  public class UserController {
+      @Autowired
+      private UserService userService;
+
+      @GetMapping("/user-profile")
+      public CompletableFuture<UserProfile> getUserProfile(@RequestParam int userId) {
+          return userService.fetchUserAsync(userId)
+              .thenCompose(user -> userService.fetchOrdersAsync(user.id())
+                  // 异步二次封装
+                  .thenApplyAsync(orders -> userService.encapsulateProfile(user, orders))
+              )
+              .handle((profile, throwable) -> {
+                  if (throwable != null) {
+                      // 记录异常（生产环境使用日志框架）
+                      System.err.println("Error: " + throwable.getMessage());
+                      // 返回默认值或抛出自定义异常
+                      return new UserProfile(new User(-1, "Unknown"), List.of());
+                  }
+                  return profile;
+              });
+      }
+  }
+
+  /**
+   * Spring Boot 配置：自定义线程池
+  */
+  @Configuration
+  class AsyncConfig {
+      @Bean
+      public Executor taskExecutor() {
+          ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+          executor.setCorePoolSize(4); // 核心线程数
+          executor.setMaxPoolSize(8);  // 最大线程数
+          executor.setQueueCapacity(100); // 队列容量
+          executor.setThreadNamePrefix("Async-Thread-"); // 线程名前缀
+          executor.initialize();
+          return executor;
+      }
+  }
+  ```
+
+- 局部线程池，批量请求列表示例
+
+  ```java
+  import jakarta.annotation.PreDestroy;
+  import org.springframework.scheduling.annotation.Async;
+  import org.springframework.scheduling.annotation.EnableAsync;
+  import org.springframework.stereotype.Service;
+
+  import java.time.LocalDateTime;
+  import java.util.List;
+  import java.util.concurrent.CompletableFuture;
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+  import java.util.stream.Collectors;
+
+  @Service
+  @EnableAsync
+  public class ApiService {
+      // 局部线程池
+      private final ExecutorService executor = Executors.newFixedThreadPool(8);
+
+      // 模拟异步调用外部 API
+      @Async
+      public CompletableFuture<ApiResult> callApiAsync(String id) {
+          return CompletableFuture.supplyAsync(() -> {
+              try {
+                  // 模拟 API 调用延迟
+                  Thread.sleep(1000);
+                  if (id == null || id.isEmpty()) {
+                      throw new IllegalArgumentException("Invalid ID: " + id);
+                  }
+                  // 模拟返回数据
+                  return new ApiResult(id, "Data for " + id);
+              } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new RuntimeException("API call interrupted for ID: " + id, e);
+              }
+          }, executor).orTimeout(2, java.util.concurrent.TimeUnit.SECONDS); // 设置超时
+      }
+
+      // 二次封装单个结果
+      private ResultDTO encapsulateResult(ApiResult result, String status) {
+          return new ResultDTO(
+              result.id(),
+              result.data(),
+              status,
+              LocalDateTime.now()
+          );
+      }
+
+      // 二次封装失败结果
+      private ResultDTO encapsulateError(String id, Throwable throwable) {
+          return new ResultDTO(
+              id,
+              null,
+              "Failed: " + throwable.getMessage(),
+              LocalDateTime.now()
+          );
+      }
+
+      // 批量异步调用 API 并汇总
+      public CompletableFuture<ApiResponseDTO> processApiCalls(List<String> ids) {
+          // 将每个 ID 映射为异步任务
+          List<CompletableFuture<ResultDTO>> futures = ids.stream()
+              .map(id -> callApiAsync(id)
+                  // 异步处理每个结果的封装
+                  .thenApplyAsync(result -> encapsulateResult(result, "Success"), executor)
+                  // 单独处理每个任务的异常
+                  .exceptionally(throwable -> encapsulateError(id, throwable))
+              )
+              .collect(Collectors.toList());
+
+          // 等待所有任务完成并汇总
+          return CompletableFuture.allOf(futures.toArray(CompletableFuture<?>[]::new))
+          // allOf().join() 会阻塞当前线程； thenApplyAsync() 开启异步，子线程调用join() 并不会影响整体性能；
+              .thenApplyAsync(v -> {
+                  // 收集所有结果
+                  List<ResultDTO> results = futures.stream()
+                      .map(CompletableFuture::join) // 此时 allOf 已确保完成，无阻塞
+                      .collect(Collectors.toList());
+
+                  // 判断整体状态
+                  boolean allSuccess = results.stream()
+                      .allMatch(dto -> dto.status().startsWith("Success"));
+                  String overallStatus = allSuccess ? "All Success" : "Partial Failure";
+
+                  // 返回汇总 DTO
+                  return new ApiResponseDTO(results, ids.size(), overallStatus);
+              }, executor)
+              // 整体异常处理（兜底）
+              .handle((response, throwable) -> {
+                  if (throwable != null) {
+                      System.err.println("Error processing API calls: " + throwable.getMessage());
+                      return new ApiResponseDTO(List.of(), ids.size(), "Failed");
+                  }
+                  return response;
+              });
+      }
+
+      // 关闭线程池
+      @PreDestroy
+      public void shutdownExecutor() {
+          executor.shutdown();
+      }
+  }
+  ```
+
+### 8.8 VirtualThread
+
+- jdk 21、spring boot 3.2 以上使用
+- 虚拟线程是一种由 JVM 管理的轻量级线程，与传统的平台线程（Platform Thread，绑定到操作系统的线程）不同，它不直接映射到 OS 线程，而是由 JVM 在少量平台线程（称为载体线程）上调度大量虚拟线程。
+- 核心特性
+  - 轻量级：
+    - 虚拟线程的创建和销毁开销极低（内存占用仅几百字节），支持创建数百万个虚拟线程。
+    - 相比之下，平台线程每个占用约 1MB 栈内存，创建过多会导致资源耗尽。
+  - 高并发：
+    - 适合 I/O 密集型任务（如 Web 请求、数据库查询、API 调用），因为虚拟线程在阻塞操作（如 I/O）时会自动让出载体线程，减少线程阻塞。
+  - 简化并发模型：
+    - 虚拟线程允许使用阻塞式编程（如同步代码）代替复杂的异步或回调模型（如 CompletableFuture），代码更直观。
+    - 例如，传统的 Thread.sleep、InputStream.read 等阻塞操作在虚拟线程中高效运行。
+  - 兼容性：
+    - 虚拟线程与现有的 Java 并发 API（如 ExecutorService、Thread）兼容。
+    - 无需修改代码，现有同步代码可在虚拟线程上运行，获得异步性能。
+  - 调度机制：
+    - 虚拟线程由 JVM 的调度器（基于 ForkJoinPool）管理，自动处理上下文切换。
+    - 当虚拟线程遇到阻塞（如 I/O、锁等待），JVM 会将其“卸载”到内存，让载体线程执行其他虚拟线程。
+- 功能对比
+
+特性 | Virtual Thread | Platform Thread
+---|---|---
+资源占用 | 轻量级（几百字节） | 重量级（约 1MB 栈内存）
+创建数量 | 可创建数百万个 | 受限于 OS 线程数（通常几千个）
+阻塞成本 | 阻塞时自动卸载，低成本 | 阻塞占用 OS 线程，高成本
+适用场景 | I/O 密集型（如 Web、数据库、API 调用） | CPU 密集型（如计算任务）
+编程模型 | 阻塞式代码，简单直观 | 异步/回调复杂，或阻塞成本高
+调度 | JVM 调度（ForkJoinPool） | OS 调度
+
+- 示例：
+
+  ```java
+  import jakarta.annotation.PreDestroy;
+  import org.springframework.stereotype.Service;
+  import org.springframework.web.bind.annotation.PostMapping;
+  import org.springframework.web.bind.annotation.RequestBody;
+  import org.springframework.web.bind.annotation.RestController;
+
+  import java.time.LocalDateTime;
+  import java.util.ArrayList;
+  import java.util.List;
+  import java.util.concurrent.ExecutorService;
+  import java.util.concurrent.Executors;
+  import java.util.concurrent.Future;
+
+  // 数据模型
+  record ApiResult(String id, String data) {}
+  record ResultDTO(String id, String data, String status, LocalDateTime timestamp) {}
+  record ApiResponseDTO(List<ResultDTO> results, int total, String overallStatus) {}
+
+  /**
+   * 服务层：使用虚拟线程处理 API 调用
+   */
+  @Service
+  public class ApiService {
+      // 虚拟线程 ExecutorService
+      private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
+      // 模拟同步 API 调用
+      private ApiResult callApiSync(String id) {
+          try {
+              // 模拟阻塞调用
+              Thread.sleep(1000);
+              if (id == null || id.isEmpty()) {
+                  throw new IllegalArgumentException("Invalid ID: " + id);
+              }
+              return new ApiResult(id, "Data for " + id);
+          } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException("API call interrupted for ID: " + id, e);
+          }
+      }
+
+      // 二次封装结果
+      private ResultDTO encapsulateResult(ApiResult result, String status) {
+          return new ResultDTO(result.id(), result.data(), status, LocalDateTime.now());
+      }
+
+      // 二次封装错误
+      private ResultDTO encapsulateError(String id, Throwable throwable) {
+          return new ResultDTO(id, null, "Failed: " + throwable.getMessage(), LocalDateTime.now());
+      }
+
+      /**
+       * 非阻塞api调用
+       */
+      public CompletableFuture<ApiResponseDTO> processApiCalls(List<String> ids) {
+          return CompletableFuture.supplyAsync(() -> {
+              // 现有逻辑
+              List<Future<ResultDTO>> futures = new ArrayList<>();
+              for (String id : ids) {
+                  futures.add(executor.submit(() -> {
+                      try {
+                          return encapsulateResult(callApiSync(id), "Success");
+                      } catch (Exception e) {
+                          return encapsulateError(id, e);
+                      }
+                  }));
+              }
+              // 收集结果
+              List<ResultDTO> results = new ArrayList<>();
+              for (Future<ResultDTO> future : futures) {
+                  try {
+                      results.add(future.get(3, TimeUnit.SECONDS));
+                  } catch (Exception e) {
+                      results.add(encapsulateError("Unknown", e));
+                  }
+              }
+              boolean allSuccess = results.stream().allMatch(dto -> dto.status().startsWith("Success"));
+              return new ApiResponseDTO(results, ids.size(), allSuccess ? "All Success" : "Partial Failure");
+          }, executor);
+      }
+
+      // 关闭 ExecutorService
+      @PreDestroy
+      public void shutdownExecutor() {
+          executor.close();
+      }
+  }
+
+  /**
+   * 控制器
+   */
+  @RestController
+  public class ApiController {
+      private final ApiService apiService;
+
+      public ApiController(ApiService apiService) {
+          this.apiService = apiService;
+      }
+
+      @PostMapping("/process-apis")
+      public ApiResponseDTO processApis(@RequestBody List<String> ids) {
+          return apiService.processApiCalls(ids);
+      }
+  }
+  ```
+
+- Spring Boot 配置（可选）：
+  - 如果需要全局虚拟线程支持，可在 application.properties 中启用：
+
+```java
+spring.threads.virtual.enabled=true
+```
+
+### 8.9 响应式编程（基础）
 
 - Reactive Streams 规范
 - 简介：Project Reactor, RxJava
+
+CompletableFuture<T> 返回值为什么没有对CompletableFuture的封装
+
+ThreadLocal 和线程安全变量的区别？
+
+CAS 如何实现原子操作？有什么缺点？
+
+Unsafe 和 VarHandle 有什么区别？
+
+如何使用 CompletableFuture 实现异步任务编排？
+
+Java 17 引入的并发优化有哪些？
 
 ---
 
@@ -1505,32 +3142,3 @@ public class Demo7 {
 线程的六种状态
 
 notify() 如何确认唤醒线程？ 关联关系是如何产生的？
-
-* 线程锁
-  * synchronized
-  * ReentrantLock
-  * ReentrantReadWriteLock
-
-* 多线程相关类：
-  * Condition
-  * CountDownLatch
-  * CyclicBarrier
-  * Semaphore
-  * Exchanger
-  * LockSupport
-  * Future
-  * ThreadPoolExecutor
-  * CompletableFuture
-  * CompletionService
-  * FutureTask
-  * Callable
-  * Runnable
-  * Thread
-  * ThreadLocal
-  * Atomic
-  * ThreadPoolExecutor
-  * CompletableFuture
-
-* Runnable 与 Callable
-* 线程池 ExecutorService
-* CompletableFuture 函数式多线程执行
