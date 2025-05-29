@@ -121,7 +121,7 @@ public class MyCallable implements Callable<String> {
         this.keepAliveTime = unit.toNanos(keepAliveTime);
         this.threadFactory = threadFactory;
         this.handler = handler;
-
+                              }
 
         ExecutorService executor = new ThreadPoolExecutor(
             2, 4, 60, TimeUnit.SECONDS,
@@ -167,20 +167,21 @@ public class MyCallable implements Callable<String> {
 
 ### 3.2 状态转换图
 
-  ![多线程状态转换](/assets/java多线程.png "多线程状态转换")
+    ![多线程状态转换](/assets/java多线程.png "多线程状态转换")
+
 
 ### 3.3 方法对状态的影响
 
-方法 | 状态变化 | 额外注意事项
---- | --- | ---
-start() | NEW ➔ RUNNABLE | 启动新线程
-run() | - | 普通方法调用
-yield() | RUNNABLE ➔ RUNNABLE | 主动让出CPU
-sleep() | RUNNABLE ➔ TIMED_WAITING | 不释放锁，时间到自动就绪
-join() | RUNNABLE ➔ WAITING/TIMED_WAITING | 当前线程等待另一个线程结束
-wait() | RUNNABLE ➔ WAITING/TIMED_WAITING | 释放锁，等待被唤醒
-notify() | WAITING ➔ BLOCKED | 唤醒一个，抢锁
-notifyAll() | WAITING ➔ BLOCKED | 唤醒全部，抢锁
+方法 | 状态变化 | 额外注意事项  
+--- | --- | ---  
+start() | NEW ➔ RUNNABLE | 启动新线程  
+run() | - | 普通方法调用    
+yield() | RUNNABLE ➔ RUNNABLE | 主动让出CPU    
+sleep() | RUNNABLE ➔ TIMED_WAITING | 不释放锁，时间到自动就绪  
+join() | RUNNABLE ➔ WAITING/TIMED_WAITING | 当前线程等待另一个线程结束 
+wait() | RUNNABLE ➔ WAITING/TIMED_WAITING | 释放锁，等待被唤醒 
+notify() | WAITING ➔ BLOCKED | 唤醒一个，抢锁  
+notifyAll() | WAITING ➔ BLOCKED | 唤醒全部，抢锁  
 
 - `start()`
   - 状态变化：`New` -> `Runnable`
@@ -387,6 +388,7 @@ LoadStore Barrier | 保证volatile 读前的所有普通写操作已经完成 | 
   - 支持中断锁获取、限时锁获取。
   - 需要手动加锁、手动释放锁。
   - 特性
+
   特性 | 说明
   ---|---
   可重入性 | 同一线程可以多次获得同一把锁，类似 synchronized
@@ -505,7 +507,7 @@ atomicInteger.addAndGet(5);       // 加5，变为6
 boolean success = atomicInteger.compareAndSet(6, 10); // 如果当前是6，则更新为10
 ```
 
-- AtomicReference
+- `AtomicReference`
   - 可以保证对象引用的原子性更新。
   - 适用于多个线程操作对象指针场景。
   - 只是保证引用本身的原子性，不保证对象内部字段的线程安全！
@@ -515,7 +517,7 @@ AtomicReference<String> atomicReference = new AtomicReference<>("Hello");
 atomicReference.compareAndSet("Hello", "World");
 ```
 
-- LongAdder
+- `LongAdder`
   - 为什么需要 LongAdder？
     - 在高并发场景下，AtomicInteger/AtomicLong的单点CAS竞争严重，导致性能下降。
     - LongAdder 通过分段累加，降低了竞争，提高了吞吐量。
@@ -532,12 +534,13 @@ long value = longAdder.sum(); // 获取总和
 ```
 
 - 原子类使用场景
-需求 | 推荐使用
+
+| 需求 | 推荐使用   |
 ---|---
-少量线程更新，竞争小 | AtomicInteger, AtomicLong
-高并发场景，频繁累加 | LongAdder
-更新引用（对象指针） | AtomicReference
-更新字段且包含逻辑校验（如版本号） | AtomicReference + 版本管理
+|   少量线程更新，竞争小 | AtomicInteger, AtomicLong
+|   高并发场景，频繁累加 | LongAdder    |
+|   更新引用（对象指针） | AtomicReference  |
+|   更新字段且包含逻辑校验（如版本号） | AtomicReference + 版本管理 |
 
 ### 4.6 公平锁与非公平锁
 
@@ -2621,6 +2624,7 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
   - 资源管理：在高并发场景下，监控线程池大小和任务负载，避免资源耗尽。
 
 - 全局线程池配置最佳实践
+
   ```java
   import org.springframework.beans.factory.annotation.Autowired;
   import org.springframework.scheduling.annotation.Async;
@@ -3007,10 +3011,300 @@ spring.threads.virtual.enabled=true
 
 ### 8.9 响应式编程（基础）
 
-- Reactive Streams 规范
-- 简介：Project Reactor, RxJava
+> Reactive Streams 是一个轻量级规范（2015 年发布），定义了异步流处理的标准接口，重点解决**背压（Backpressure）**问题。
+> 提供非阻塞、异步的流处理机制，支持生产者和消费者之间的动态流量控制。
+> 主要组成部分：Reactive Streams, Project Reactor, RxJava
 
-CompletableFuture<T> 返回值为什么没有对CompletableFuture的封装
+#### Reactive Streams
+
+- 核心概念
+  - Publisher
+    - 数据生产者，发布数据流（可能是无限的）。
+    - 负责向订阅者推送数据（onNext）、错误（onError）或完成信号（onComplete）。
+    - 接口：
+
+    ```java
+    interface Publisher<T> { 
+        void subscribe(Subscriber<? super T> subscriber); 
+    }
+    ```
+
+  - Subscriber
+    - 数据消费者，订阅 Publisher 并处理数据。
+    - 通过 `onSubscribe` 获取 `Subscription，控制数据流。`
+    - 接口：
+
+    ```java
+    interface Subscriber<T> { 
+        void onSubscribe(Subscription subscription); 
+        void onNext(T item); 
+        void onError(Throwable throwable); 
+        void onComplete();
+    }
+    ```
+
+  - Subscription
+    - 订阅关系，连接 `Publisher` 和 `Subscriber。`
+    - request(n) 用于请求 n 条数据，实现背压；cancel() 取消订阅。
+    - 接口：
+
+    ```java
+    interface Subscription { 
+        void request(long n); 
+        void cancel(); 
+    }
+    ```
+
+  - Processor
+    - 同时是 Publisher 和 Subscriber，用于数据流转换或处理。
+    - 例如，过滤、映射等操作。
+- 背压（Backpressure）
+  - 定义：当数据生产者（Publisher）生产数据的速度快于消费者（Subscriber）处理速度时，背压机制允许消费者通过 Subscription.request(n) 控制数据流速，防止内存溢出或系统崩溃。
+  - 实现：Subscriber 动态请求数据量（如 request(10)），Publisher 根据请求发送数据。
+- 关键原则
+  - 异步非阻塞：数据处理在异步线程中执行，避免阻塞主线程。
+  - 事件驱动：基于事件（onNext、onError、onComplete）处理数据流。
+  - 背压支持：确保生产者和消费者协调工作。
+  - 标准化：Reactive Streams 规范被 JDK 9（Flow API）、Project Reactor、RxJava 等实现。
+
+- 示例代码：
+
+```java
+import java.util.concurrent.Flow.*;
+import java.util.concurrent.SubmissionPublisher;
+
+public class FlowExample {
+    public static void main(String[] args) throws InterruptedException {
+        // 创建 Publisher
+        SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
+
+        // 创建 Subscriber
+        Subscriber<String> subscriber = new Subscriber<>() {
+            private Subscription subscription;
+
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                this.subscription = subscription;
+                subscription.request(1); // 初始请求 1 条数据
+            }
+
+            @Override
+            public void onNext(String item) {
+                System.out.println("Received: " + item);
+                subscription.request(1); // 请求下一条
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("Error: " + throwable.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+                System.out.println("Completed");
+            }
+        };
+
+        // 订阅
+        publisher.subscribe(subscriber);
+
+        // 发布数据
+        publisher.submit("Item 1");
+        publisher.submit("Item 2");
+        publisher.submit("Item 3");
+        publisher.close(); // 完成
+
+        Thread.sleep(1000); // 等待处理
+    }
+}
+```
+
+#### Project Reactor
+
+- Project Reactor 是 Spring 生态的默认响应式框架，基于 Reactive Streams 规范，广泛用于 Spring WebFlux（响应式 Web 框架）。它提供了两种核心类型：
+  - Mono：表示 0 或 1 个元素的异步流（如单个 API 响应）。
+  - Flux：表示 0 到 N 个元素的异步流（如列表、流式数据）。
+- 核心特性
+  - 非阻塞：所有操作异步执行，适合高并发场景。
+  - 背压支持：内置背压机制，消费者控制数据流速。
+  - 操作符丰富：提供类似 Stream API 的操作符（如 map、filter、flatMap），支持数据转换和组合。
+  - 错误处理：通过 onErrorReturn、onErrorResume 等操作符处理异常。
+  - 调度器：通过 Schedulers 控制任务执行线程（如 parallel、boundedElastic）。
+- 示例代码：
+  - 说明：
+    - `Flux`：处理 `List<String>`，每个 ID 异步调用 API。
+    - `publishOn()` 和 `subscribeOn` 用于指定数据流在哪个线程上执行。
+      - `subscribeOn`，控制整个流的起点（初始化），决定数据源和上游操作的线程，对下游无直接影响（除非无 publishOn）。 指定初始化运行线程，若后续无 publishOn，则默认使用 subscribeOn 的线程。
+      - `publishOn()`，控制流的某一段（当前publishOn()到下一个publishOn()之间的操作），切换后续操作和订阅者的线程，不影响上游。从声明 publicOn 开始，到下一个 publishOn 之间，所有操作和订阅者都运行在第一个 publishOn() 所指定的线程。
+    - `subscribe()` 是一个激活流的动作，触发整个数据管道（从数据源到操作符到消费者）的执行。
+      - `subscribe()` 本身的调用线程不一定执行消费逻辑，具体线程由 `subscribeOn` 和 `publishOn` 决定。
+      - `Spring WebFlux`：控制器返回 `Mono/Flux`，`Spring` 自动订阅，开发者无需显式调用 `subscribe()`。
+    - `flatMap`：将同步调用包装为 `Mono`，在异步线程（`Schedulers.boundedElastic`）执行。
+    - `onErrorResume`：捕获异常，返回默认结果。
+    - `collectList`：将 `Flux` 收集为 `Mono<List>`。
+    - `map`：封装为 `ApiResponseDTO`。
+  - 调度器（`Schedulers`）
+    - `Schedulers.immediate()`：当前线程执行。
+    - `Schedulers.single()`：单一线程，适合低并发。
+    - `Schedulers.boundedElastic()`：弹性线程池，适合 `I/O` 密集型任务。
+    - `Schedulers.parallel()`：固定线程池，适合 `CPU` 密集型任务。
+
+```java
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+public class ReactorExample {
+    public static void main(String[] args) throws InterruptedException {
+        // 创建 Flux
+        Flux<String> flux = Flux.just("id1", "id2", "id3")
+            // 异步调用 API（模拟）
+            .flatMap(id -> Mono.fromCallable(() -> callApiSync(id))
+                .subscribeOn(Schedulers.boundedElastic()) // 异步线程
+            )
+            // 二次封装
+            .map(data -> new ResultDTO(data, "Success"))
+            // 错误处理
+            .onErrorResume(e -> Flux.just(new ResultDTO("Unknown", "Error: " + e.getMessage())))
+            // 收集结果
+            .collectList()
+            // 转换为 Mono
+            .map(results -> new ApiResponseDTO(results, results.size(), "Success"));
+
+        // 订阅并打印
+        flux.subscribe(response -> System.out.println("Response: " + response));
+
+        Thread.sleep(2000); // 等待异步完成
+    }
+
+    // 模拟同步 API 调用
+    private static String callApiSync(String id) throws InterruptedException {
+        Thread.sleep(1000);
+        if (id.equals("id3")) {
+            throw new RuntimeException("API failed for " + id);
+        }
+        return "Data for " + id;
+    }
+
+    // DTO 定义
+    record ResultDTO(String id, String status) {}
+    record ApiResponseDTO(List<ResultDTO> results, int total, String overallStatus) {}
+}
+```
+
+- 示例：
+  - 自定义订阅
+
+    ```java
+    Flux.just("A", "B").subscribe(
+    item -> System.out.println("Item: " + item), // onNext
+    error -> System.err.println("Error: " + error), // onError
+    () -> System.out.println("Completed") // onComplete
+    );
+    ```
+
+  - 切换线程
+
+    ```java
+    Flux.just("A", "B")
+        .publishOn(Schedulers.parallel()) // 切换线程
+        .subscribe(item -> System.out.println(Thread.currentThread().getName() + ": " + item));
+    ```
+
+  - 错误处理
+
+    ```java
+    // 返回默认值
+    Flux.just("A", "B")
+        .map(s -> { if (s.equals("B")) throw new RuntimeException("Error"); return s; })
+        .onErrorReturn("Default")
+        .subscribe(System.out::println);
+
+    // 返回新的流
+    Flux.just("A", "B")
+    .map(s -> { if (s.equals("B")) throw new RuntimeException("Error"); return s; })
+    .onErrorResume(e -> Flux.just("C", "D"))
+    .subscribe(System.out::println);
+    ```
+
+  - 背压控制
+
+    ```java
+    Flux.range(1, 100)
+    .subscribe(new BaseSubscriber<Integer>() {
+        @Override
+        protected void hookOnSubscribe(Subscription subscription) {
+            request(10); // 初始请求 10 条
+        }
+
+        @Override
+        protected void hookOnNext(Integer value) {
+            System.out.println(value);
+            request(1); // 每次请求 1 条
+        }
+    });
+    ```
+
+  - Spring WebFlux
+
+  ```java
+  import org.springframework.web.bind.annotation.PostMapping;
+  import org.springframework.web.bind.annotation.RequestBody;
+  import org.springframework.web.bind.annotation.RestController;
+  import reactor.core.publisher.Flux;
+  import reactor.core.publisher.Mono;
+  import reactor.core.scheduler.Schedulers;
+
+  import java.time.LocalDateTime;
+  import java.util.List;
+
+  @RestController
+  public class ApiController {
+      private final ApiService apiService;
+
+      public ApiController(ApiService apiService) {
+          this.apiService = apiService;
+      }
+
+      @PostMapping("/process-apis")
+      public Mono<ApiResponseDTO> processApis(@RequestBody List<String> ids) {
+          return apiService.processApiCalls(ids);
+      }
+  }
+
+  @Service
+  class ApiService {
+      private ApiResult callApiSync(String id) throws InterruptedException {
+          Thread.sleep(1000);
+          if (id.equals("id3")) {
+              throw new RuntimeException("API failed for " + id);
+          }
+          return new ApiResult(id, "Data for " + id);
+      }
+
+      public Mono<ApiResponseDTO> processApiCalls(List<String> ids) {
+          return Flux.fromIterable(ids)
+              .flatMap(id -> Mono.fromCallable(() -> callApiSync(id))
+                  .subscribeOn(Schedulers.boundedElastic()) // 异步 I/O
+                  .map(result -> new ResultDTO(result.id(), result.data(), "Success", LocalDateTime.now()))
+                  .onErrorResume(e -> Mono.just(new ResultDTO(id, null, "Failed: " + e.getMessage(), LocalDateTime.now())))
+              )
+              .publishOn(Schedulers.parallel()) // 切换线程处理结果
+              .collectList()
+              .map(results -> new ApiResponseDTO(
+                  results,
+                  ids.size(),
+                  results.stream().allMatch(dto -> dto.status().equals("Success")) ? "All Success" : "Partial Failure"
+              ));
+      }
+
+      record ApiResult(String id, String data) {}
+      record ResultDTO(String id, String data, String status, LocalDateTime timestamp) {}
+      record ApiResponseDTO(List<ResultDTO> results, int total, String overallStatus) {}
+  }
+  ```
+
+CompletableFuture< T> 返回值为什么没有对CompletableFuture的封装
 
 ThreadLocal 和线程安全变量的区别？
 
@@ -3029,19 +3323,57 @@ Java 17 引入的并发优化有哪些？
 ### 9.1 合理设置线程数
 
 - CPU 密集型：核心数 + 1
+  - CPU 密集型任务：计算密集（如加密、图像处理），线程数接近 CPU 核心数，避免过多上下文切换。
 - IO 密集型：核心数 * 2
+  - I/O 密集型任务：涉及阻塞操作（如网络请求、数据库查询），线程数可适当增加，弥补等待时间。
+- 获取运行环境核心数
+
+```java
+int coreCount = Runtime.getRuntime().availableProcessors();
+```
 
 ### 9.2 锁优化技巧
 
-- 锁粗化、锁消除
+- 锁粗化 TODO
+  - 定义：将多个小锁合并为一个大锁，减少锁获取/释放的开销。
+  - 场景：频繁加锁的循环或连续操作。
+- 锁消除
+  - 定义：JVM 通过逃逸分析（Escape Analysis）移除不必要的锁。
+  - 场景：局部对象（无逃逸）的同步操作。
 - 锁分离
+  - 定义：将锁拆分为更细粒度的锁，减少竞争。
+  - 场景：读写分离（如 ReadWriteLock）。
 - 无锁并发
+  - 定义：使用 CAS（Compare-And-Swap）或原子类（如 AtomicInteger）代替锁。
+  - 场景：计数器、状态标志。
+- 实践建议
+  - 优先细粒度锁：减少锁范围，降低竞争。
+  - 使用并发工具：ConcurrentHashMap、LongAdder 等替代传统锁。
+  - JVM 优化：确保 -XX:+DoEscapeAnalysis 和 -XX:+EliminateLocks 启用。
+  - 监控锁竞争：使用 JVisualVM 或 Async Profiler 分析锁开销。
 
 ### 9.3 常见并发问题
 
 - 死锁：资源循环等待
-- 活锁、线程饥饿
+- 活锁
+  - 定义：线程不断尝试操作但无法前进（如两线程互相让步）。
+  - 场景：动态锁顺序调整失败。
+  - 解决：
+    - 引入随机性（如随机等待）。
+    - 简化竞争逻辑。
+- 线程饥饿
+  - 定义：某些线程因优先级低或锁竞争无法获得资源。
+  - 场景：高优先级线程霸占 CPU。
+  - 解决：
+    - 使用公平锁（如 ReentrantLock(true)）。
+    - 调整线程优先级（谨慎使用）。
 - 上下文切换过多的开销
+  - 定义：线程频繁切换导致 CPU 开销增加。
+  - 原因：线程数过多、锁竞争频繁。
+  - 解决：
+    - 优化线程数（参考 9.1）。
+    - 减少锁竞争（使用无锁或细粒度锁）。
+    - 使用虚拟线程（Java 21+）降低切换成本。
 
 ### 9.4 常用诊断工具
 
@@ -3056,56 +3388,196 @@ Java 17 引入的并发优化有哪些？
 
 ### 10.1 主内存与工作内存
 
-- 每个线程拥有自己的工作内存
+- 核心概念
+  - 每个线程拥有自己的工作内存
+  - 主内存：JVM 的共享内存区域，存储所有`实例变量`、`静态变量`和`数组对象`。
+  - 工作内存：每个线程的私有内存，缓存主内存变量的副本（如局部变量、方法参数、线程栈）。
+  - 交互规则：
+    - 线程对变量的读写操作在工作内存中进行。
+    - 工作内存的变量副本需通过主内存同步（如读/写操作）。
+    - JMM 控制主内存与工作内存的交互，确保一致性。
+- 工作流程
+  - 读（read）：从主内存读取变量到工作内存。
+  - 加载（load）：将读取的变量放入工作内存副本。
+  - 使用（use）：线程使用工作内存中的变量副本。
+  - 赋值（assign）：线程修改工作内存中的变量副本。
+  - 存储（store）：将修改后的副本写入主内存。
+  - 写（write）：主内存更新变量值。
+- 关键点
+  - 工作内存隔离导致可见性问题：一个线程的修改对其他线程不可见，除非通过同步机制。
+  - JMM 通过 volatile、synchronized 等保证可见性。
+- 实践建议
+  - 使用 volatile 或 synchronized 确保变量修改对其他线程可见。
+  - 避免直接依赖线程缓存，可能导致数据不一致。
 
 ### 10.2 happens-before 原则
 
 - 保证线程间的可见性和有序性
+- 核心概念
+  - happens-before 是 JMM 的核心规则，定义了操作间的内存可见性和执行顺序。
+  - 如果操作 A happens-before 操作 B，则 A 的结果对 B 可见，且 A 在 B 之前执行。
+- 主要规则
+  - 程序顺序规则：同一线程内，前面的操作 happens-before 后续操作。
+  - 示例：x = 1; y = x; 中，x = 1 happens-before y = x。
+  - 监视器锁规则：解锁操作 happens-before 后续的加锁操作。
+  - 示例：synchronized 块的释放 happens-before 其他线程的获取。
+  - volatile 变量规则：对 volatile 变量的写 happens-before 后续的读。
+  - 示例：volatile int x; x = 1; happens-before 其他线程的 x 读。
+  - 线程启动规则：Thread.start() happens-before 线程的任何操作。
+  - 线程终止规则：线程的任何操作 happens-before 其他线程检测到终止（如 join()）。
+  - 传递性：如果 A happens-before B，B happens-before C，则 A happens-before C。
 
 ### 10.3 内存屏障与指令重排序
 
-- 编译器和 CPU 的优化行为
+- 编译器和 `CPU` 的优化行为
+- 核心概念
+  - 指令重排序：编译器和 `CPU` 为优化性能，可能调整指令执行顺序。
+  - 编译器重排序：如调整无关指令顺序。
+  - `CPU` 重排序：乱序执行（如指令流水线）。
+- 内存屏障（Memory Barrier）：强制指令按特定顺序执行，防止重排序。
+  - 类型：
+    - LoadLoad：确保读操作顺序。
+    - StoreStore：确保写操作顺序。
+    - LoadStore：读后写顺序。
+    - StoreLoad：写后读顺序（最强屏障）。
+- JMM 中的内存屏障
+  - JMM 通过内存屏障实现 happens-before：
+    - volatile 写：插入 StoreStore 和 StoreLoad 屏障。
+    - volatile 读：插入 LoadLoad 和 LoadStore 屏障。
+    - synchronized：加锁/解锁插入屏障，确保操作原子性和可见性。
 
 ### 10.4 final 语义
 
 - 对构造器完成后的可见性保证
+- 核心概念
+  - final 字段在对象构造完成后提供可见性保证，防止其他线程看到未初始化的值。
+  - JMM 确保：
+    - final 字段的写在构造函数结束前完成。
+    - 其他线程在构造函数完成后看到 final 字段的初始化值。
+- 规则
+  - 构造器安全：final 字段初始化后，其他线程无需同步即可安全访问。
+  - 禁止重排序：final 字段的写不会与构造函数外的操作重排序。
+  - 限制：仅适用于 final 字段，非 final 字段需额外同步。
+- 实践建议
+  - 使用 final 字段增强不可变性。
+  - 避免构造函数中 this 逃逸。
+  - 结合 volatile 或 synchronized 保护非 final 字段。
 
 ### 10.5 synchronized 与 volatile 的内存语义
 
-- 加锁释放锁的内存屏障效果
 - volatile 的 happens-before 关系
+- synchronized 的内存语义
+  - 加锁：
+    - 进入 synchronized 块时，线程从主内存刷新变量副本到工作内存（清空工作内存）。
+    - 插入 Load 屏障，确保读取最新值。
+  - 释放锁：
+    - 退出 synchronized 块时，将工作内存的修改写入主内存。
+    - 插入 Store 屏障，确保修改可见。
+  - 效果：
+    - 提供原子性（临界区操作不可分割）。
+    - 提供可见性（修改对后续加锁线程可见）。
+    - 提供有序性（防止重排序）。
+- volatile 的内存语义
+  - 写操作：
+    - 将修改写入主内存，刷新其他线程的工作内存。
+    - 插入 StoreStore 和 StoreLoad 屏障，防止重排序。
+  - 读操作：
+    - 从主内存读取最新值。
+    - 插入 LoadLoad 和 LoadStore 屏障，确保顺序。
+  - 效果：
+    - 提供可见性：写操作对后续读可见。
+    - 提供有序性：防止指令重排序。
+    - 无原子性：不保证复合操作（如 i++）的原子性。
+- synchronized vs volatile
+
+|   特性    |   synchronized    |	volatile    |
+|---|---|---|
+|   原子性  |	提供（临界区）  |	不提供（需用 Atomic 类）    |
+|   可见性	|   提供    |	提供    |
+|   有序性  |	提供    |	提供    |
+|   性能	|   较高开销（锁竞争）  |	较低开销（无锁）    |
+|   场景    |	复杂同步（如多步操作）  |	简单状态标志、单变量    |
+
+- 实践建议
+  - synchronized：用于需要原子性和复杂逻辑的场景（如计数器、事务）。
+  - volatile：用于状态标志、单变量读写（如 boolean 标志）。
+  - Atomic 类：结合 volatile 和 CAS，提供无锁原子操作。
 
 ---
 
-## 学习建议
+## 知识点
 
-- [ ] 每个知识点配合代码实践
-- [ ] 使用可视化工具监控线程状态
-- [ ] 阅读 JDK 源码理解实现原理
-- [ ] 在实际项目中应用并发技巧
-- [ ] 持续关注 Java 并发库的版本演进
+### ThreadLocal 和线程安全变量的区别？
 
----
+- 定义：
+  - ThreadLocal
+    - 提供线程局部变量，每个线程拥有独立的变量副本，互不干扰。
+    - 通过 ThreadLocal<T> 存储数据，使用 set(T)、get() 访问。
+    - 常用于线程隔离场景（如用户上下文、事务管理）。
+    - 弱引用，使用完毕后需要手动remove清理，否则容易造成内存泄漏。
+  - 线程安全变量
+    - 线程安全变量允许多线程共享数据，但通过同步避免竞争。
+    - 指在多线程环境中能安全访问的变量，通常通过同步机制（如 synchronized、Lock）或并发类（如 AtomicInteger、ConcurrentHashMap）实现。
+- 区别
 
-* 对于同一个Runnable实例启动的多个线程：
-  * 共享的资源（线程不安全）：
-    * 该Runnable对象的所有成员变量（实例变量）
-    * 该对象引用的其他共享对象（如集合、文件流等外部资源）
-    * 类的静态变量（属于类级别，所有实例共享）
+|   特性    |   ThreadLocal |   线程安全变量    |
+| --- | --- | --- |
+|   数据隔离    |   每个线程独立副本，互不干扰  | 共享数据，多线程访问需同步  |
+|   用途 |   线程局部存储（如上下文传递） |   共享状态管理（如计数器、缓存）  |
+|   同步开销   | 无同步开销，线程隔离 |   有同步开销（如锁、CAS） |
+|   典型类 |   ThreadLocal<T> |   AtomicInteger, ConcurrentHashMap    |
+|   内存管理    | 需手动清理（防止内存泄漏）  | 由 JVM 垃圾回收管理 |
+|使用场景 |   用户认证信息、日志上下文 |   计数器、线程安全的集合  |
+
+
+### CAS 如何实现原子操作？有什么缺点？
+
+> CAS（Compare-And-Swap，比较并交换） 是一种无锁的原子操作，基于硬件指令（如 cmpxchg）实现线程安全。它通过比较内存值与预期值是否相等来决定是否更新。
+
+- 原理:
+  - CAS 操作接受三个参数：内存位置（V）、预期值（A）、新值（B）。
+  - 步骤：
+    - 检查内存位置 V 的当前值是否等于 A。
+    - 如果相等，将 V 更新为 B；否则，不更新。
+  - 硬件保证 CAS 是一个原子操作，避免多线程干扰。
+- 优点
+  - 无锁，性能优于锁（低竞争场景）。
+  - 简单高效，适合计数器、状态标志等。
+- 缺点
+  - ABA 问题：
+    - 如果值从 A 变为 B 再变回 A，CAS 可能误认为未被修改。
+    - 解决：使用版本号或 AtomicStampedReference
+  - 高竞争开销：
+    - 在高并发下，CAS 可能多次失败（因其他线程修改值），导致重试（自旋），增加 CPU 开销。
+    - 解决：降低竞争（如分段锁）或使用其他机制（如 LongAdder）。
+  - 仅限单变量：
+    - CAS 只能操作单个变量，无法直接实现复杂原子操作（如多变量更新）。
+    - 解决：使用锁或事务性机制。
+  - 自旋开销：
+    - 失败时自旋可能导致线程空转，浪费 CPU。
+    - 解决：限制重试次数或使用 LongAdder。
+
+### 多线程启动一个多线程类 与 多线程启动多个多线程类
+
+- 对于同一个Runnable实例启动的多个线程：
+  - 共享的资源（线程不安全）：
+    - 该Runnable对象的所有成员变量（实例变量）
+    - 该对象引用的其他共享对象（如集合、文件流等外部资源）
+    - 类的静态变量（属于类级别，所有实例共享）
   
-  * 线程私有的资源（线程安全）：
-    * 方法内的局部变量（包括参数变量）
-    * 用ThreadLocal修饰的变量
-    * 每个线程独立的调用栈、程序计数器等运行时数据
+  - 线程私有的资源（线程安全）：
+    - 方法内的局部变量（包括参数变量）
+    - 用ThreadLocal修饰的变量
+    - 每个线程独立的调用栈、程序计数器等运行时数据
 
-  * Thread类自身的成员变量（如线程名name等）
+  - Thread类自身的成员变量（如线程名name等）
 
-* 关键结论：
-  * 成员变量共享：只要多个线程操作同一个对象实例，其成员变量就是共享的
+- 关键结论：
+  - 成员变量共享：只要多个线程操作同一个对象实例，其成员变量就是共享的
 
-  * 执行过程独立：每个线程会独立执行run()方法，拥有自己的方法调用栈和局部变量
+  - 执行过程独立：每个线程会独立执行run()方法，拥有自己的方法调用栈和局部变量
 
-  * 静态变量特殊：即使是不同Runnable实例，静态变量也是全局共享的
+  - 静态变量特殊：即使是不同Runnable实例，静态变量也是全局共享的
 
 ```java
 // 线程不安全示例
@@ -3138,7 +3610,3 @@ public class Demo7 {
 }
 
 ```
-
-线程的六种状态
-
-notify() 如何确认唤醒线程？ 关联关系是如何产生的？
