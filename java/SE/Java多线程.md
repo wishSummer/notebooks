@@ -788,16 +788,16 @@ public class ProducerConsumerWithCondition {
 
 > Java 管道是一种特殊的流，用于在线程之间传递数据。它通常由一个输入管道流和一个输出管道流组成。输入管道流用于从一个线程读取数据，而输出管道流用于将数据写入另一个线程。这两个管道流之间的数据传输是单向的，即数据只能从输入流传输到输出流。
 
-- `PipedInputStream` / `PipedOutputStream`
-  - 字节流
-- `PipedReader` / `PipedWriter`
-  - 字符流
+- 字节流
+  - `PipedInputStream` / `PipedOutputStream`
+- 字符流
+  - `PipedReader` / `PipedWriter`
 - 只能线程间通信，不能单线程使用。
 - 一次只能一个线程写，一个线程读，否则可能抛异常或数据错乱。
 - 不支持多对多（一写多读 / 多写一读要自己控制同步）
 - 管道有内部缓冲区（默认大约 1024 bytes），写太快而读太慢可能造成阻塞。
   - 写入速度太快，缓冲区满了 → write() 会阻塞等待
-  - 读取速度太慢，缓冲区空了 → read() 会阻塞等待
+  - 读取速度太快，缓冲区空了 → read() 会阻塞等待
 - 管道本质是双向绑定，下面两种方式实际上并没有区别。
 - 使用 `ObjectInputStream` 等对象流包装管道可以达到响应需求。
 
@@ -828,8 +828,8 @@ public class ProducerConsumerWithCondition {
   BufferedReader reader = new BufferedReader(new InputStreamReader(pipedInputStream));
   BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pipedOutputStream));
   // 或
-  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
   BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
 
     // 线程1：写入数据
   Thread thread1 = new Thread(() -> {
@@ -946,10 +946,10 @@ public class ProducerConsumerWithCondition {
           private final AtomicInteger activeProducers;
           private final String name;
 
-          public Consumer(BufferedReader reader, AtomicInteger activeProducers, String name) {
+          public Consumer(BufferedReader reader, String name, AtomicInteger activeProducers) {
               this.reader = reader;
-              this.activeProducers = activeProducers;
               this.name = name;
+              this.activeProducers = activeProducers;
           }
 
           @Override
@@ -1000,33 +1000,33 @@ public class ProducerConsumerWithCondition {
 
 ### 6.2 ThreadPoolExecutor 参数详解
 
-- ThreadPoolExecutor(推荐)
+- `ThreadPoolExecutor`(推荐)
   - 线程数设置依据：
-    - CPU 密集型(任务主要消耗 CPU 资源（如计算、压缩、加密）)：CPU核心数 + 1
-    - IO 密集型(任务主要在执行 IO 操作（如文件读写、数据库、网络请求）)：2 * CPU核心数 或更多
+    - `CPU` 密集型(任务主要消耗 CPU 资源（如计算、压缩、加密）)：CPU核心数 + 1
+    - `IO` 密集型(任务主要在执行 IO 操作（如文件读写、数据库、网络请求）)：2 * CPU核心数 或更多
   - 构造方法：
-    - corePoolSize（必需）：核心线程数。默认情况下，核心线程会一直存活，但是当将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
-    - maximumPoolSize（必需）：线程池所能容纳的最大线程数。当活跃线程数达到该数值后，后续的新任务将会阻塞。
-    - keepAliveTime（必需）：线程闲置超时时长。如果超过该时长，非核心线程就会被回收。如果将 allowCoreThreadTimeout 设置为 true 时，核心线程也会超时回收。
-    - unit（必需）：指定 keepAliveTime 参数的时间单位。常用的有：TimeUnit.MILLISECONDS（毫秒）、TimeUnit.SECONDS（秒）、TimeUnit.MINUTES（分）。
-    - workQueue（必需）：任务队列。通过线程池的 execute() 方法提交的 Runnable 对象将存储在该参数中。其采用阻塞队列实现。
+    - `corePoolSize`（必需）：核心线程数。默认情况下，核心线程会一直存活，但是当将 `allowCoreThreadTimeout` 设置为 `true` 时，核心线程也会超时回收。
+    - `maximumPoolSize`（必需）：线程池所能容纳的最大线程数。当活跃线程数达到该数值后，后续的新任务将会阻塞。
+    - `keepAliveTime`（必需）：线程闲置超时时长。如果超过该时长，非核心线程就会被回收。如果将 `allowCoreThreadTimeout` 设置为 `true` 时，核心线程也会超时回收。
+    - `unit`（必需）：指定 `keepAliveTime` 参数的时间单位。常用的有：`TimeUnit.MILLISECONDS`（毫秒）、`TimeUnit.SECONDS`（秒）、`TimeUnit.MINUTES`（分）。
+    - `workQueue`（必需）：任务队列。通过线程池的 `execute()` 方法提交的 `Runnable` 对象将存储在该参数中。其采用阻塞队列实现。
       - 任务队列：如果使用有界队列，当队列饱和时并超过最大线程数时就会执行拒绝策略；而如果使用无界队列，因为任务队列永远都可以添加任务，所以设置 maximumPoolSize 没有任何意义。
-        - ArrayBlockingQueue：一个由数组结构组成的有界阻塞队列（数组结构可配合指针实现一个环形队列）。
-        - LinkedBlockingQueue： 一个由链表结构组成的有界阻塞队列，在未指明容量时，容量默认为 Integer.MAX_VALUE。
-        - PriorityBlockingQueue： 一个支持优先级排序的无界阻塞队列，对元素没有要求，可以实现 Comparable 接口也可以提供 Comparator 来对队列中的元素进行比较。跟时间没有任何关系，仅仅是按照优先级取任务。
-        - DelayQueue：类似于PriorityBlockingQueue，是二叉堆实现的无界优先级阻塞队列。要求元素都实现 Delayed 接口，通过执行时延从队列中提取任务，时间没到任务取不出来。
-        - SynchronousQueue： 一个不存储元素的阻塞队列，消费者线程调用 take() 方法的时候就会发生阻塞，直到有一个生产者线程生产了一个元素，消费者线程就可以拿到这个元素并返回；生产者线程调用 put() 方法的时候也会发生阻塞，直到有一个消费者线程消费了一个元素，生产者才会返回。
-        - LinkedBlockingDeque： 使用双向队列实现的有界双端阻塞队列。双端意味着可以像普通队列一样 FIFO（先进先出），也可以像栈一样 FILO（先进后出）。
-        - LinkedTransferQueue： 它是ConcurrentLinkedQueue、LinkedBlockingQueue 和 SynchronousQueue 的结合体，但是把它用在 ThreadPoolExecutor 中，和 LinkedBlockingQueue 行为一致，但是是无界的阻塞队列。
-    - threadFactory（可选）：线程工厂。用于指定为线程池创建新线程的方式。
-    - handler（可选）：拒绝策略。当达到最大线程数时需要执行的饱和策略。
-      - 拒绝策略：当线程池的线程数达到最大线程数时，需要执行拒绝策略。拒绝策略需要实现`RejectedExecutionHandler` 接口，并实现 rejectedExecution(Runnable r, ThreadPoolExecutor executor) 方法。
-        - AbortPolicy（默认）：丢弃任务并抛出 RejectedExecutionException 异常。
-        - CallerRunsPolicy：由调用线程处理该任务。
-        - DiscardPolicy：丢弃任务，但是不抛出异常。可以配合这种模式进行自定义的处理方式。
-        - DiscardOldestPolicy：丢弃队列最早的未处理任务，然后重新尝试执行任务。
+        - `ArrayBlockingQueue`：一个由数组结构组成的有界阻塞队列（数组结构可配合指针实现一个环形队列）。
+        - `LinkedBlockingQueue`： 一个由链表结构组成的有界阻塞队列，在未指明容量时，容量默认为 Integer.MAX_VALUE。
+        - `PriorityBlockingQueue`： 一个支持优先级排序的无界阻塞队列，对元素没有要求，可以实现 `Comparable` 接口也可以提供 `Comparator` 来对队列中的元素进行比较。跟时间没有任何关系，仅仅是按照优先级取任务。
+        - `DelayQueue`：类似于`PriorityBlockingQueue`，是二叉堆实现的无界优先级阻塞队列。要求元素都实现 Delayed 接口，通过执行时延从队列中提取任务，时间没到任务取不出来。
+        - `SynchronousQueue`： 一个不存储元素的阻塞队列，消费者线程调用 `take()` 方法的时候就会发生阻塞，直到有一个生产者线程生产了一个元素，消费者线程就可以拿到这个元素并返回；生产者线程调用 `put()` 方法的时候也会发生阻塞，直到有一个消费者线程消费了一个元素，生产者才会返回。
+        - `LinkedBlockingDeque`： 使用双向队列实现的有界双端阻塞队列。双端意味着可以像普通队列一样 `FIFO`（先进先出），也可以像栈一样 `FILO`（先进后出）。
+        - `LinkedTransferQueue`： 它是`ConcurrentLinkedQueue`、`LinkedBlockingQueue` 和 `SynchronousQueue` 的结合体，但是把它用在 `ThreadPoolExecutor` 中，和 `LinkedBlockingQueue` 行为一致，但是是无界的阻塞队列。
+    - `threadFactory`（可选）：线程工厂。用于指定为线程池创建新线程的方式。
+    - `handler`（可选）：拒绝策略。当达到最大线程数时需要执行的饱和策略。
+      - 拒绝策略：当线程池的线程数达到最大线程数时，需要执行拒绝策略。拒绝策略需要实现`RejectedExecutionHandler` 接口，并实现 `rejectedExecution(Runnable r, ThreadPoolExecutor executor) `方法。
+        - `AbortPolicy`（默认）：丢弃任务并抛出 `RejectedExecutionException` 异常。
+        - `CallerRunsPolicy`：由调用线程处理该任务。
+        - `DiscardPolicy`：丢弃任务，但是不抛出异常。可以配合这种模式进行自定义的处理方式。
+        - `DiscardOldestPolicy`：丢弃队列最早的未处理任务，然后重新尝试执行任务。
 
-- ThreadPoolExecutor 示例
+- `ThreadPoolExecutor` 示例
 
   ```java
   import java.util.concurrent.*;
@@ -1111,40 +1111,40 @@ public class ProducerConsumerWithCondition {
 
 ### 6.3 常见线程池类型,使用 `Executors` 工具类(不推荐)
 
-- 定长线程池（FixedThreadPool）
+- 定长线程池（`FixedThreadPool`）
   - 特点：只有核心线程，线程数量固定，执行完立即回收，任务队列为链表结构的有界队列。
   - 应用场景：控制线程最大并发数。
-- 定时线程池（ScheduledThreadPool ）
+- 定时线程池（`ScheduledThreadPool`）
   - 特点：核心线程数量固定，非核心线程数量无限，执行完闲置 10ms 后回收，任务队列为延时阻塞队列。
   - 应用场景：执行定时或周期性的任务。
-- 可缓存线程池（CachedThreadPool）
+- 可缓存线程池（`CachedThreadPool`）
   - 特点：无核心线程，非核心线程数量无限，执行完闲置 60s 后回收，任务队列为不存储元素的阻塞队列。
   - 应用场景：执行大量、耗时少的任务。
-- 单线程化线程池（SingleThreadExecutor）
+- 单线程化线程池（`SingleThreadExecutor`）
   - 特点：只有 1 个核心线程，无非核心线程，执行完立即回收，任务队列为链表结构的有界队列。
   - 应用场景：不适合并发但可能引起 IO 阻塞性及影响 UI 线程响应的操作，如数据库操作、文件操作等。
-- 不推荐使用 Executors 工具类的原因
-  - FixedThreadPool 和 SingleThreadExecutor：主要问题是堆积的请求处理队列均采用 LinkedBlockingQueue(无界)，可能会耗费非常大的内存，甚至 OOM。
-  - CachedThreadPool 和 ScheduledThreadPool：主要问题是线程数最大数是 Integer.MAX_VALUE，可能会创建数量非常多的线程，甚至 OOM。
+- 不推荐使用 `Executors` 工具类的原因
+  - `FixedThreadPool` 和 `SingleThreadExecutor`：主要问题是堆积的请求处理队列均采用 `LinkedBlockingQueue`(无界)，可能会耗费非常大的内存，甚至 OOM。
+  - `CachedThreadPool` 和 `ScheduledThreadPool`：主要问题是线程数最大数是 Integer.MAX_VALUE，可能会创建数量非常多的线程，甚至 OOM。
 
 ### 6.4 Fork/Join 框架
 
-> Fork/Join 是 Java7 引入的一个 高效并行计算框架。主要目标是：把大任务拆成小任务并行执行，最后合并结果。
+> `Fork/Join` 是 `Java7` 引入的一个 高效并行计算框架。主要目标是：把大任务拆成小任务并行执行，最后合并结果。
 > 适合需要 递归划分 的任务。任务能拆分成很多小块，可以并发处理。
 
 - 工作窃取算法
   - 核心概念：
-    - 每个线程维护一个双端队列（Deque）。
+    - 每个线程维护一个双端队列（`Deque`）。
     - 线程自己总是从 头部（栈顶）取任务执行。
-    - 如果自己空闲了，会从其他线程的尾部偷任务来做！（Work Stealing）
+    - 如果自己空闲了，会从其他线程的尾部偷任务来做！（`Work Stealing`）
   - 好处：
     - 减少线程间争抢，提升 CPU 利用率。
     - 动态负载均衡，避免有的线程闲着，有的线程很忙。
 
 - `ForkJoinPool`
-  - 线程池，专门管理 Fork/Join 任务
+  - 线程池，专门管理 `Fork/Join` 任务
 - `ForkJoinTask<V>`
-  - 抽象任务类，支持 fork 和 join
+  - 抽象任务类，支持 `fork` 和 `join`
 - `RecursiveTask`
   - 有返回值的任务（常用）
 - `RecursiveAction`
@@ -1494,11 +1494,11 @@ public class ProducerConsumerWithCondition {
 
 工具类 | 主要功能 | 特点
 ---|---|---
-CountDownLatch | 等待其他线程完成 | 一次性，计数器不能重置
-CyclicBarrier | 多线程到达屏障一起出发 | 可循环重用
-Semaphore | 控制并发访问数量 | 获取/释放许可
-Exchanger | 线程间交换数据 | 成对出现
-Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
+`CountDownLatch` | 等待其他线程完成 | 一次性，计数器不能重置
+`CyclicBarrier` | 多线程到达屏障一起出发 | 可循环重用
+`Semaphore` | 控制并发访问数量 | 获取/释放许可
+`Exchanger` | 线程间交换数据 | 成对出现
+`Phaser` | 多阶段同步器 | 动态注册/注销，支持多阶段
 
 ---
 
@@ -1506,20 +1506,20 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 
 ### 7.1 Map
 
-- ConcurrentHashMap
-  - JDK7：分段锁机制
-  - JDK8：CAS + 链表/红黑树优化
-  - ConcurrentHashMap（分段锁/JDK8优化）
+- `ConcurrentHashMap`
+  - `JDK7`：分段锁机制
+  - `JDK8`：`CAS` + 链表/红黑树优化
+  - `ConcurrentHashMap（分段锁`/JDK8优化）
   - 核心数据结构
-    - val 和 next 都是 volatile 保证可见性
-    - CAS + synchronized 控制并发
+    - `val` 和 `next` 都是 `volatile` 保证可见性
+    - `CAS` + `synchronized` 控制并发
 
     ```java
     // Node 是基础结构
     static class Node<K,V> implements Map.Entry<K,V> {
         final int hash; // 缓存 key 的哈希值，加快定位
         final K key; 
-        volatile V val; 
+        volatile V val;  // value
         volatile Node<K,V> next; // 链表结构
     }
     ```
@@ -1539,7 +1539,7 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
     /**
      * sizeCtl 控制初始化、扩容的阈值 
      * <0：正在扩容，
-     * -1 表示某个线程正在初始化表 
+     * -1 表示某个线程正在初始化表
      * =0：未初始化 0：正常情况下，表示下一次扩容的阈值
      *  */ 
     private transient volatile int sizeCtl;
@@ -1548,7 +1548,7 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
     private transient volatile int transferIndex;
     ```
 
-  - put 流程（核心）：
+  - `put` 流程（核心）：
 
     ```arduino
     put(key, val)
@@ -1569,7 +1569,7 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 
     ```
 
-  - push 步骤解析
+  - `push` 步骤解析
 
     步骤 | 细节
     ---|---
@@ -1759,7 +1759,7 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 
   - 树化机制（红黑树转换）
     - 链表长度超过 8 且数组长度大于 64 时，把链表转成红黑树（TreeBin）
-    - 树操作基本是 `synchronized` 加锁下做
+    - 树操作基本是 `synchronized` 加锁下进行
     - 搜索复杂度由 `O(n)` 变成 `O(logn)`
     - TreeNode 继承自 Node，增加了 prev、parent 等指针；
     - 红黑树是通过双向链表 + 平衡逻辑插入实现的；
@@ -1838,13 +1838,13 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 
 #### 7.3.1 阻塞队列 BlockingQueue
 
-- BlockingQueue 是 java.util.concurrent 包下的接口。
+- `BlockingQueue` 是 java.util.concurrent 包下的接口。
 - 是一种支持阻塞的队列：
   - 当队列满时，插入操作会被阻塞（等待空间可用）。
   - 当队列空时，移除操作会被阻塞（等待元素可用）。
 - 常用方法：
 
-类型 | 抛出异常 | 返回特殊值（true/false 或 null） | 阻塞 | 超时
+类型 | 抛出异常方法 | 返回特殊值（true/false 或 null） | 阻塞 | 超时
 ---|---|---|---|---
 插入 | add(e) | offer(e) | put(e) | offer(e, timeout, unit)
 移除 | remove() | poll() | take() | poll(timeout, unit)
@@ -2066,17 +2066,17 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 - `ConcurrentLinkedQueue`
   - 基于链表实现的线程安全、非阻塞队列。
   - 内部采用 CAS（Compare-And-Swap）无锁机制 来保证并发安全。
-  - 属于 宽松一致性，即不保证严格的实时一致性（最终一致性）。
-  - 是 无界队列（没有容量限制）。
-  - ConcurrentLinkedQueue 使用 链表节点连接元素。
+  - 属于宽松一致性，即不保证严格的实时一致性（最终一致性）。
+  - 是无界队列（没有容量限制）。
+  - `ConcurrentLinkedQueue` 使用链表节点连接元素。
   - 通过 head 和 tail 两个原子指针来管理队列。
   - 依赖 CAS 自旋算法 来实现插入/删除，而不是加锁。
   - 如何通过不加锁实现线程安全。
     - 无锁`（Lock-Free）`+ `CAS（Compare-And-Swap）`原子操作
-    - 入队（add/offer）和出队（poll）操作，都是通过 自旋 CAS 保证多线程下的数据一致性。
+    - 入队（`add/offer`）和出队（`poll`）操作，都是通过 自旋 `CAS` 保证多线程下的数据一致性。
     - `CAS` 是一种底层硬件指令：比较内存中某个位置的值是否等于预期值，如果是则更新成新值，否则重试。
     - `ConcurrentLinkedQueue` 内部维护了 `volatile` 的 `head` 和 `tail`，确保线程对节点的可见性。
-    - 由于 不加锁，避免了线程挂起/唤醒的开销，因此在 高并发环境下比传统加锁（比如 synchronized）性能更好。
+    - 由于不加锁，避免了线程挂起/唤醒的开销，因此在 高并发环境下比传统加锁（比如 `synchronized`）性能更好。
 
   ```java
   import java.util.concurrent.ConcurrentLinkedQueue;
@@ -2147,18 +2147,18 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 
 ### 8.1 内存语义与原子性工具
 
-- volatile 保证可见性与禁止指令重排。
-- Atomic* 类利用 CAS 和内存屏障实现原子性。
+- `volatile` 保证可见性与禁止指令重排。
+- `Atomic*` 类利用 `CAS` 和内存屏障实现原子性。
 - `LongAdder` 高并发下分段累加，减轻竞争。
-  - 为解决AtomicLong 在高并发场景下，由于所有线程竞争同一个 value 字段，CAS 失败率高、重试频繁，性能下降严重。
-  - LongAdder 的设计思想 —— 分段累加（Striped64）
-    - 将一个变量拆分为多个变量（Cell）分段累加，最后求和时汇总结果。
+  - 为解决 `AtomicLong` 在高并发场景下，由于所有线程竞争同一个 `value` 字段，`CAS` 失败率高、重试频繁，性能下降严重。
+  - `LongAdder` 的设计思想 —— 分段累加（`Striped64`）
+    - 将一个变量拆分为多个变量（`Cell`）分段累加，最后求和时汇总结果。
     - 将并发压力分散到多个变量上，从而减少争抢。
 
 ### 8.2 CAS（Compare-And-Swap）机制
 
 - 核心原理
-  - CAS操作包含三个参数：
+  - `CAS` 操作包含三个参数：
     - 内存位置（V）：要更新的变量的内存地址。
     - 预期值（A）：调用者认为当前的内存值应该是多少。
     - 新值（B）：如果预期值匹配，将要写入的新值。
@@ -2168,32 +2168,32 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
     - 如果相等，则将内存位置V的值更新为新值B。
     - 如果不相等，则操作失败，不修改内存值。
 - 优点
-  - 无锁（Lock-Free）：CAS避免了传统锁机制（如互斥锁），减少了线程阻塞和上下文切换的开销。
+  - 无锁（`Lock-Free`）：`CAS` 避免了传统锁机制（如互斥锁），减少了线程阻塞和上下文切换的开销。
   - 高并发性能：适合高并发场景，尤其是读多写少的场景。
   - 简单高效：CAS操作通常由硬件直接支持，执行速度快。
-  - Java 原子类、大多数并发容器均基于此构建。
+  - `Java` 原子类、大多数并发容器均基于此构建。
 - 缺点
-  - ABA问题：
+  - `ABA` 问题：
     - 问题描述：线程1读取值为A，线程2将值从A改为B再改回A，线程1的CAS操作会认为值未被修改，实际上中间发生了变化。
     - 解决方法：使用版本号或时间戳（如AtomicStampedReference在Java中）。
   - 自旋开销：
-    - 如果CAS失败，线程可能需要循环重试（自旋），在高竞争场景下可能导致CPU资源浪费。
+    - 如果 `CAS` 失败，线程可能需要循环重试（自旋），在高竞争场景下可能导致 `CPU` 资源浪费。
   - 仅限单一变量：
-    - CAS适合操作单个变量，无法直接处理多个变量的原子操作。
+    - `CAS` 适合操作单个变量，无法直接处理多个变量的原子操作。
 - 典型应用
   - 原子类：
-    - Java中的AtomicInteger、AtomicReference等使用CAS实现线程安全的计数器或引用更新。
-    - 示例：AtomicInteger的incrementAndGet()方法内部通过CAS实现无锁自增。
+    - Java中的 `AtomicInteger` `、AtomicReference` 等使用 `CAS` 实现线程安全的计数器或引用更新。
+    - 示例：`AtomicInteger` 的 `incrementAndGet()` 方法内部通过 `CAS` 实现无锁自增。
   - 无锁数据结构：
-    - 无锁队列、栈等数据结构常使用CAS来确保线程安全。
+    - 无锁队列、栈等数据结构常使用 `CAS` 来确保线程安全。
   - 乐观锁：
-  - 数据库中的乐观锁机制常基于CAS思想，通过版本号检查数据是否被修改。
+  - 数据库中的乐观锁机制常基于 `CAS` 思想，通过版本号检查数据是否被修改。
 
 ### 8.3 自旋锁、自适应锁
 
 - 自旋锁：
   - 定义
-    - 自旋锁是一种忙等待（busy-waiting）的锁机制，线程在尝试获取锁失败时不会立即阻塞，而是通过循环（自旋）反复检查锁是否可用，直到获取锁或达到某种条件。
+    - 自旋锁是一种忙等待（`busy-waiting`）的锁机制，线程在尝试获取锁失败时不会立即阻塞，而是通过循环（自旋）反复检查锁是否可用，直到获取锁或达到某种条件。
   - 核心原理
     - 线程尝试通过原子操作（如CAS）获取锁。
     - 如果锁被占用，线程不会进入阻塞状态，而是循环检查锁的状态（忙等待）。
@@ -2218,10 +2218,10 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
     - 如果锁很快会被释放（短临界区），线程选择自旋；如果锁持有时间较长或竞争激烈，线程选择阻塞，进入等待队列。
     - 实现通常依赖运行时信息（如锁的统计数据）或操作系统支持。
   - 典型实现
-    - Java的synchronized：JVM中的synchronized关键字在高版本中使用了自适应锁优化。
-      - 初始阶段：尝试自旋（轻量级锁，基于CAS）。
+    - `Java` 的 `synchronized`：`JVM` 中的 `synchronized` 关键字在高版本中使用了自适应锁优化。
+      - 初始阶段：尝试自旋（轻量级锁，基于 `CAS` ）。
       - 竞争加剧：升级为重量级锁（阻塞，依赖操作系统互斥量）。
-  - 自适应自旋：如Linux内核的自适应自旋锁，根据锁持有者的状态（是否在运行）决定自旋还是休眠。
+  - 自适应自旋：如 `Linux` 内核的自适应自旋锁，根据锁持有者的状态（是否在运行）决定自旋还是休眠。
 
 ### 8.4 并发设计模式
 
@@ -2323,11 +2323,11 @@ Phaser | 多阶段同步器 | 动态注册/注销，支持多阶段
 ### 8.5 ThreadLocal
 
 - 实现原理
-  - ThreadLocal 本身不存储数据，仅作为 ThreadLocalMap 的键。
-  - 每个线程的 ThreadLocalMap 是独立的，互不影响。
-  - ThreadLocalMap 使用弱引用存储键（ThreadLocal 对象），以便在 ThreadLocal 实例被垃圾回收时清理无用条目（但可能导致内存泄漏，详见下文）。
-  - 底层原理：Thread 类中有一个 ThreadLocalMap 成员。
-    - 每个线程（Thread 对象）内部维护一个 ThreadLocalMap 实例，ThreadLocalMap 是一个定制化的哈希表，键是 ThreadLocal 对象，值是线程的变量副本。
+  - `ThreadLocal` 本身不存储数据，仅作为 `ThreadLocalMap` 的键。
+  - 每个线程的 `ThreadLocalMap` 是独立的，互不影响。
+  - `ThreadLocalMap` 使用弱引用存储键（ThreadLocal 对象），以便在 `ThreadLocal` 实例被垃圾回收时清理无用条目（但可能导致内存泄漏，详见下文）。
+  - 底层原理：`Thread` 类中有一个 `ThreadLocalMap` 成员。
+    - 每个线程（`Thread` 对象）内部维护一个 `ThreadLocalMap` `实例，ThreadLocalMap` 是一个定制化的哈希表，键是 `ThreadLocal` 对象，值是线程的变量副本。
     - ThreadLocalMap 由 ThreadLocal 类内部定义，存储在 Thread 类的 threadLocals 字段中。
   - 操作流程：
     - 设置值：调用 ThreadLocal.set(T value) 时，ThreadLocal 会获取当前线程的 ThreadLocalMap，将 (ThreadLocal, value) 键值对存入该 Map。
