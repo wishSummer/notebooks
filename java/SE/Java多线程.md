@@ -2836,7 +2836,6 @@ public class ProducerConsumerWithCondition {
                   List<ResultDTO> results = futures.stream()
                       .map(CompletableFuture::join) // 此时 allOf 已确保完成，无阻塞
                       .collect(Collectors.toList());
-
                   // 判断整体状态
                   boolean allSuccess = results.stream()
                       .allMatch(dto -> dto.status().startsWith("Success"));

@@ -29,6 +29,8 @@ public class InetAddressDemo {
 
 ### ServerSocket、Socket
 
+> TCP Socket
+
 * 服务端
 
 ```java
@@ -192,6 +194,8 @@ public class ClintSocketService {
 ```
 
 ### DatagramSocket、DatagramPacket
+
+> UDP Socket
 
 * 服务端
 
