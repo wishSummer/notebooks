@@ -2622,6 +2622,28 @@ public class ProducerConsumerWithCondition {
   - 合理处理异常：总是使用 `.handle` 或 `.exceptionally` 捕获异常，避免未处理的异常导致程序失败。
   - 注意任务编排：使用 `.thenCompose` 展平嵌套的 `CompletableFuture`，提高代码可读性。
   - 资源管理：在高并发场景下，监控线程池大小和任务负载，避免资源耗尽。
+  - ComplateFuture 阻塞多异步任务获取所有结果
+
+    ```java
+    /**
+     * 1. 等所有任务完成后再处理结果；若有一个任务未完成则阻塞主线程。
+     * 2. 若某一任务出现异常，可以更早的集中捕获所有异常，或进行统一超时处理。
+     * 3. 相当于执行所有任务，若某一任务未结束，则阻塞主线程；
+     **/
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+    /**
+     * 1. 若仅对每个任务单独join()。当某个任务长时间未响应则会阻塞后续任务处理。无法达到全部任务同步执行的效果。需要先使用上面的AllOf().join()。
+     * 2. 若某一任务出现异常，则可能中断整体任务的执行。
+     * 3. 推荐先使用一阻塞所有任务，再使用join()处理执行结果。
+     * 4. 相当于遍历所有任务逐个阻塞获取执行结果，若某一未执行完毕，则阻塞到当前步骤。
+     **/
+    futures.stream()
+    .map(CompletableFuture::join)
+    .filter(Objects::nonNull)
+    .collect(Collectors.toList());
+
+    ```
 
 - 全局线程池配置最佳实践
 
