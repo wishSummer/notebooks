@@ -55,8 +55,61 @@ systemctl status rsyslog
 
 ```
 
+## passwd 密码管理
+
+* 修改指定用户密码，置空默认为root
+
+```shell
+sudo passwd user_name
+```
+
+* 设置用户user_name的密码在30天后过期
+
+```shell
+sudo passwd -x 30 user_name
+```
+
+* 查看用户user_name的密码状态
+
+```shell
+sudo passwd -S user_name
+```
+
+## crontab 定时任务
+
+### 基本语法 TODO 格式化：
+
+Crontab的基本语法如下：
+
+MIN HOUR DOM MON DOW CMD
+复制
+其中：
+
+MIN 表示分钟，范围是0到59。
+
+HOUR 表示小时，范围是0到23。
+
+DOM 表示月份中的第几天，范围是1到31。
+
+MON 表示月份，范围是1到12。
+
+DOW 表示一周中的第几天，范围是0到6，其中0和6都表示周日。
+
+CMD 表示要执行的命令或脚本。
+
+常用命令
+
+crontab -e：编辑当前用户的crontab文件。
+
+crontab -l：列出当前用户的crontab文件内容。
+
+crontab -r：删除当前用户的crontab文件。
+
+crontab -u [user]：指定用户的crontab文件。
 
 
+实例：
+30 08 * * * /home/user/full-backup
 
 ## ll 和 ls
 
@@ -688,12 +741,12 @@ iptables -t nat -A DOCKER-INGRESS 1 -p tcp -m tcp --dport 10001 -j DNAT --to-des
 
 ```
 
-*   各参数含义
-    *   \-t：指定需要维护的防火墙规则表 filter、nat、mangle或raw。在不使用 -t 时则默认使用 filter 表。
-    *   COMMAND：子命令，定义对规则的管理。
-    *   chain：指明链表。
-    *   CRETIRIA：匹配参数。
-    *   ACTION：触发动作。
+* 各参数含义
+  * \-t：指定需要维护的防火墙规则表 filter、nat、mangle或raw。在不使用 -t 时则默认使用 filter 表。
+  * COMMAND：子命令，定义对规则的管理。
+  * chain：指明链表。
+  * CRETIRIA：匹配参数。
+  * ACTION：触发动作。
 *   iptables 命令常用的选项及各自的功能：
     *   \-A  添加防火墙规则(添加到规则末尾)
     *   \-I  插入防火墙规则(插入到指定位置，未指定为首部)
