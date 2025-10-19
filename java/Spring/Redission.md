@@ -1,101 +1,25 @@
 # Redission
 
-## Redission 实现定时任务
+## Redission 定时任务
 
-> 若程序异常退出，已刷新到阻塞队列的任务会丢失，但在延迟队列到期的任务不会丢失，在程序启动后会立即搬运到阻塞队列进行消费。
+### RBlockingQueue
 
-- pom.xml 依赖
+### RDelayedQueue
 
-```xml
-<dependency>
-  <groupId>org.redisson</groupId>
-  <artifactId>redisson-spring-boot-starter</artifactId>
-  <version>3.27.2</version>
-</dependency>
-```
+* 方法
+  * RDelayedQueue.offer(key, delay, TimeUnit) 添加任务
 
-- config
+* RDelayedQueue
+  * 本质是一个延迟队列，它由一个 ZSET（Sorted Set）存储元素以及到期时间
+    * key : 根据元素信息封装成一个唯一的uuid
+    * value : key(offer提供的key)
+    * source : (当前时间毫秒值 + 延迟时间)得到的到期时间，并根据当前字段排序
+  * 当offer多个相同key的任务，任务之间并不会相互干扰，实际是在延迟队列中生成两个任务。
+  * 延迟队列任务到期后并不会刷新到阻塞队列，需要Redission RDelayedQueue实例处理。
+  * 一个 目标队列（BlockingQueue 等） 用来存放真正“到期”的元素组成。
+* offer(e, delay, unit) 的逻辑大致是：
+  * 计算到期时间戳：System.currentTimeMillis() + delay
+  * 将 (e, 到期时间戳) 放入 Redis 的 ZSET
+  * 到期时由 Redisson 的 watchdog 任务 或 Lua 脚本 将元素移动到目标队列
 
-```java
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class RedissonConfig {
-
-    @Value("${spring.redis.host}")
-    private String redisHost;
-
-    @Value("${spring.redis.port}")
-    private int redisPort;
-
-    @Value("${spring.redis.password:}") // 可选
-    private String redisPassword;
-
-    @Bean(destroyMethod = "shutdown")
-    public RedissonClient redissonClient() {
-        Config config = new Config();
-        config.useSingleServer()
-              .setAddress("redis://" + redisHost + ":" + redisPort)
-              .setPassword(redisPassword.isEmpty() ? null : redisPassword);
-        return Redisson.create(config);
-    }
-}
-
-```
-
-- Service 添加任务
-
-```java
-@Service
-@RequiredArgsConstructor
-public class WhiteListService {
-
-    private final RedissonClient redissonClient;
-
-    // 添加任务到redis 延迟队列方法
-    private void scheduleWhiteListExpiryTasks() {
-        // 获取 阻塞队列
-        RBlockingQueue<Integer> blockingQueue = redissonClient.getBlockingQueue("whiteListExpireQueue");
-        // 监听 延迟队列，若存在到期任务，则刷新到阻塞队列
-        RDelayedQueue<Integer> delayedQueue = redissonClient.getDelayedQueue(blockingQueue);
-
-        long delay = Duration.between(LocalDateTime.now(), wl.getEndAt()).toMillis();
-        delayedQueue.offer(key, delay, TimeUnit.MILLISECONDS);
-    }
-}
-
-
-```
-
-- Event 任务触发
-
-```java
-@Component
-@RequiredArgsConstructor
-public class WhiteListExpireConsumer {
-
-    private final RedissonClient redissonClient;
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void startConsume() {
-        new Thread(() -> {
-            /** 获取阻塞队列，用于获取任务*/
-            RBlockingQueue<Integer> blockingQueue = redissonClient.getBlockingQueue("whiteListExpireQueue");
-            /** 获取延迟队列，确保程序启动时立刻开始监听延迟队列中是否存在到期任务，并刷新到阻塞队列进行消费*/
-            RDelayedQueue<Integer> delayedQueue = redissonClient.getDelayedQueue(blockingQueue);
-            while (true) {
-                try {
-                    Integer id = blockingQueue.take(); // 阻塞直到任务到期，获取到期任务。
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, "white-list-expire-consumer").start();
-    }
-}
-```
+[Redission 定时任务实例](../业务场景实现实例/Redission-定时任务.md)

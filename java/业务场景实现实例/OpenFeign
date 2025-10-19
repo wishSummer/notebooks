@@ -1,0 +1,26 @@
+# OpenFeign 实例模板
+
+## 使用模板
+
+* Pom.xml
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+* Application 启动类添加注解
+
+```java
+@SpringBootApplication
+@EnableFeignClients(basePackages = "com.example.client")
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+* 定义
