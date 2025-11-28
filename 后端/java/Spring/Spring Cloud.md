@@ -1,4 +1,23 @@
 # Spring Cloud
+
+```
+你已经开始接触 Spring Cloud Gateway，可以继续深入：
+
+📌 核心模块
+
+Spring Cloud Gateway（自定义 Filter 原理）
+
+服务注册/发现（Eureka/Nacos/Consul）
+
+Spring Cloud LoadBalancer
+
+OpenFeign 调用与重试机制
+
+Resilience4j（熔断、限流、隔离仓）
+
+Spring Cloud Config / Bus
+```
+
 	服务注册与发现：Consul、Nacos
 	配置中心：Consul config、Nacos
 	负载均衡：Ribbon（已停止更新）、Loadbalancer

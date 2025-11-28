@@ -61,7 +61,6 @@ fastboot reboot
   - 将 `APP` 传到手机安装。
 - 点击 安装 –> 选择 boot.img –> 开始修补文件 –> 修补完成
 
-
 ## `fastboot` 刷入修补镜像
 
 - 将修补完成的 `magisk_patched-***` 文件剪切到 `PC` 端

@@ -1,4 +1,18 @@
-# JPA
+# Spring Data
+
+JdbcTemplate 及其底层
+
+Spring Data JPA
+
+Repository 机制
+
+QueryMethod 自动解析
+
+EntityManager 事务原理
+
+MyBatis + Spring 适配机制
+
+分页、缓存、读写分离、数据一致性
 
 ## 默认方法
 
