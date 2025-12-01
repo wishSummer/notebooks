@@ -32,7 +32,6 @@ Resource / ResourceLoader
 
 ApplicationEvent / Listener
 
-
 为了真正“深入”，建议按下面顺序学习：
 
 Spring 核心容器（IoC, AOP, 事务）
@@ -53,21 +52,35 @@ Spring 源码阅读
 
 ## IOC 控制反转
 
-1. Bean 生命周期（Bean的创建到注销）
-   1. 💡你需要特别关注：
-    BeanPostProcessor
+> 对象由 Spring 创建、管理、销毁
+> 程序只“要”，不“生产”
 
-    AOP 底层就是通过它生成代理对象
+### Bean 容器
 
-    @Autowired、@ConfigurationProperties、AOP 全靠它
+Spring 的核心只有两个：
 
-    BeanDefinition
+- BeanFactory（IoC 容器核心接口）
+- ApplicationContext extents BeanFactory（更强大的容器）
 
-    Spring 加载 bean 的“元数据”
+### Bean 生命周期（Bean的创建到注销）
 
-    自动装配原理全部从这里解析
-2. Bean 的管理容器
-3. Bean 注入
+- 你需要特别关注：
+  BeanPostProcessor
+
+  AOP 底层就是通过它生成代理对象
+
+  @Autowired、@ConfigurationProperties、AOP 全靠它
+
+  BeanDefinition
+
+  Spring 加载 bean 的“元数据”
+
+  自动装配原理全部从这里解析
+- Bean 的管理容器
+
+## DI（依赖注入）原理
+
+- Bean 注入方式
 
     | 注入方式             | 推荐程度  | 说明      |
     | ---------------- | ----- | ------- |
@@ -75,7 +88,7 @@ Spring 源码阅读
     | Setter 注入        | ⭐⭐⭐   | 可选      |
     | 字段注入（@Autowired） | ⭐     | 不建议，难测试 |
 
-4. Bean 作用域
+## Bean 作用域
 
     | Scope     | 说明          |
     | --------- | ----------- |
@@ -84,21 +97,45 @@ Spring 源码阅读
     | request   | Web 请求作用域   |
     | session   | Web 会话作用域   |
 
-5. @Configuration 与 @Bean 的真正意义
-    - @Configuration 的本质：它会被 CGLIB 代理，使 @Bean 方法成为“工厂方法”，从而保证 singleton Bean 不会重复创建。
+1. @Configuration 与 @Bean 的真正意义
+   - @Configuration 的本质：它会被 CGLIB 代理，使 @Bean 方法成为“工厂方法”，从而保证 singleton Bean 不会重复创建。
 
-    ```java
-    @Configuration
-    public class AppConfig {
+   ```java
+   @Configuration
+   public class AppConfig {
 
-        @Bean
-        public UserService userService() {
-            return new UserService();
-        }
-    }
-    ```
+     @Bean
+     public UserService userService() {
+         return new UserService();
+     }
+   }
+   ```
 
 ## AOP
+
+## Spring 启动流程
+
+- 流程
+
+```java
+
+refresh() {
+    1. prepareRefresh()                         // 环境准备
+    2. obtainFreshBeanFactory()                 // 创建 BeanFactory
+    3. prepareBeanFactory()                     // 填充基本组件
+    4. invokeBeanFactoryPostProcessors()        // 配置类解析、扫描
+    5. registerBeanPostProcessors()             // 注册 Bean 级增强器
+    6. initMessageSource()                      // 国际化（可忽略）
+    7. initApplicationEventMulticaster()        // 事件广播器
+    8. onRefresh()                              // 模板方法（如 Web 容器初始化）
+    9. registerListeners()                      // 注册监听器
+   1.  finishBeanFactoryInitialization()        // 实例化所有单例 Bean
+   2.  finishRefresh()                          // 发布事件
+}
+
+```
+
+> 源码：`AbstractApplicationContext#refresh()`
 
 ## @Scheduled
 
