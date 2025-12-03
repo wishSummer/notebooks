@@ -115,7 +115,7 @@ Spring 的核心只有两个：
 
 ## Spring 启动流程
 
-- 流程
+- AbstractApplicationContext.refresh()
 
 ```java
 
