@@ -3,16 +3,16 @@
 > 一加手机 音量上 + 电源建 : 开关机
 > 一加手机 音量下 + 电源键 : 进入 `fastboot` 模式
 
-## 开启开发者模式、OEM 解锁、USB 调试
+## 1. 开启开发者模式、OEM 解锁、USB 调试
 
-- 设置 → 关于手机 → 版本号 → 连续点几次 → 开发者模式
+- 设置 → 关于手机 → 版本信息 → 版本号 → 连续点几次 → 开发者模式
 - 设置 → 系统设置 → 开发者选项：
   - 开启 `OEM` 解锁
   - 开启 `USB` 调试
 
-## 备份所有数据
+## 2. 备份所有数据
 
-## ADB 进入 `fastboot` → 解锁 `Bootloader`
+## 3. ADB 进入 `fastboot` → 解锁 `Bootloader`
 
 - 电脑连接手机
 - 管理员权限进入终端
@@ -35,7 +35,7 @@ fastboot reboot
 
 ```
 
-## 获取当前手机的 `init_boot.img` 文件
+## 4. 获取当前手机的 `init_boot.img` 文件
 
 - 参考教程 [Payload-Dumper-Compose 文档](https://magiskcn.com/payload-dumper-compose.html)
 
@@ -52,16 +52,16 @@ fastboot reboot
   - 提取 init_boot.img 文件
 - 备份 init_boot.img 文件到 `PC`，便于出错恢复手机。
 
-## 用 `Magisk` 修补 `boot`
+## 5. 用 `Magisk` 修补 `boot`
 
 - 参考教程 [Payload-Dumper-Compose 文档](https://magiskcn.com/)
 
 - 安装 APP
-  - 下载 `APP` `Magisk` [提取APP连接](https://github.com/topjohnwu/Magisk/releases)
+  - 下载 `APP` `Magisk` [下载APP连接](https://github.com/topjohnwu/Magisk/releases)
   - 将 `APP` 传到手机安装。
-- 点击 安装 –> 选择 boot.img –> 开始修补文件 –> 修补完成
+- 点击 安装 –> 选择 init_boot.img –> 开始修补文件 –> 修补完成
 
-## `fastboot` 刷入修补镜像
+## 6. `fastboot` 刷入修补镜像
 
 - 将修补完成的 `magisk_patched-***` 文件剪切到 `PC` 端
 - 在文件目录使用终端
@@ -79,3 +79,7 @@ fastboot flash init_boot [面具修补生成文件]
 ## 开机 → 完成 `Root`
 fastboot reboot
 ```
+
+## 7. 确认是否成功
+
+- 点击 magisk 查看是否获取到版本号。
