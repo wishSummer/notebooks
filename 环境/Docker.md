@@ -57,7 +57,47 @@ docker system df -v
 docker ps -q | xargs docker inspect --format '{{.State.Pid}}, {{.Id}}, {{.Name}}, {{.GraphDriver.Data.WorkDir}}' | grep 
 ```
 
+# 导出 mysql 容器内数据
 
+```shell
+  docker exec -i a938a4b7d138 \
+    mysql -h127.0.0.1 -uroot -p 'ypW#ghEjk2A!mLelYbPOq' --default-character-set=utf8 \
+    -D coral-v3\
+    -e "
+  SELECT
+    b.NAME,
+    b.address,
+    concat(
+      LEFT ( b.CODE, 8 ),
+      '21',
+    RIGHT ( b.CODE, 4 )),
+    CONCAT(
+      '704252847',
+    REPLACE ( a.mac, '-', '' )),
+    REPLACE ( a.mac, '-', '' ),
+    a.room_no
+  FROM
+    terminal a,
+    site b 
+  " \
+  > export.csv
+
+
+
+  // 个别情况
+  sudo docker exec -i a938a4b7d138 \
+    mysql -h127.0.0.1 -uroot -p --default-character-set=utf8 \
+    -D coral-v3\
+    -e "
+  select concat(left(b.code,8),'21',right(b.code,4)),'1',CONCAT('704252847',REPLACE(a.mac,'-','')),'电信227，移动224,智慧城市225,奉化广电226，联通199，宁波华数308',REPLACE(a.mac,'-',''),'1','1',
+  b.longitude,b.latitude,a.room_no,'','','','','','','','','','','','','','','',''
+  from terminal a,site b
+  " \
+  > export1.csv
+
+  上面命令输入后，再输入密码
+  'ypW#ghEjk2A!mLelYbPOq'
+```
 
 
 # 集群环境下服务管理
