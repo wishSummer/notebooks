@@ -438,6 +438,14 @@ jmap -dump:format=b,file=heap.hprof 12345
 
 ```shell
 jstack 12345
+
+# 使用方法
+1. 用 top 找到 CPU 高的 Java 进程 PID
+2. 用 top -Hp PID 找到 CPU 高的线程 ID
+3. 把线程 ID 转成十六进制(例如线程ID = 12345;十六进制后可能是=0x3039;然后在 jstack 里找：nid=0x3039)
+4. 用 jstack PID 导出线程栈
+5. 在 jstack 结果里搜索十六进制 nid
+6. 看这个线程卡在哪个方法
 ```
 
 
@@ -465,4 +473,85 @@ watch：观察方法入参/返回值/异常
 trace：查看方法调用耗时
 stack：查看方法调用路径
 heapdump：导出堆
+
+# 若内存异常上涨; 导出堆
+jmap -dump:format=b,file=heap.hprof <pid>
+
+# 使用 MAT、VisualVM、JProfiler 之类工具分析。
+# Dominator Tree
+# Leak Suspects
+# 对象数量异常的类
+# 大集合对象，比如 HashMap、ArrayList、ConcurrentHashMap
+# GC Roots 到对象的引用链
 ```
+
+
+## 解释执行与即时编译 JIT
+
+- JVM 编译运行逻辑 : Java 源码 -> javac 编译 -> .class 字节码 -> JVM 执行
+
+### 解释执行
+
+- 逻辑 : 一条字节码一条字节码地解释运行
+- 优点
+  - 启动快
+  - 不用等编译
+- 缺点
+  - 长期运行性能不如机器码
+
+
+### 即时编译 JIT
+
+- 逻辑
+  1. JVM 会观察哪些代码经常执行。
+  2. JIT 会把这些热点字节码编译成本地机器码，后面再执行就更快。
+  3. Java 不是单纯解释执行，而是 解释执行 + JIT 编译优化
+- 优化逻辑
+  - 方法内联
+  - 逃逸分析
+    - user 这个对象只在 test() 方法内部使用，没有返回出去，也没有赋给全局变量; JIT 判断对象没有逃出方法作用域，认为没有逃逸；
+    - 如果没有逃逸，JVM 可能会进行 缩消除、栈上分配、标量消除优化
+      ```java
+      public void test() {
+          User user = new User();
+          user.name = "Alice";
+      }
+
+      ```
+  - 锁消除
+    - StringBuffer 的方法是同步的，有锁。但如果 JIT 分析发现：
+    - sb 没有逃出 test() 方法
+    - 不可能被其他线程访问那么锁就没有意义，JIT 可能把锁去掉。
+    ```java
+    public void test() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("a");
+        sb.append("b");
+    }
+    ```
+  - 标量替换
+    - 如果对象没有逃逸，JVM 甚至可能不创建完整对象，而是把对象字段拆开。
+    ```java
+    class Point {
+        int x;
+        int y;
+    }
+
+    public int sum() {
+        Point p = new Point();
+        p.x = 1;
+        p.y = 2;
+        return p.x + p.y;
+    }
+
+    <!-- 类似替换为 -->
+    public int sum() {
+        int x = 1;
+        int y = 2;
+        return x + y;
+    }
+
+    ```
+  - 循环优化
+  - 栈上分配
+    - 如果对象没有逃逸，JVM 可能不把它分配到堆上，而是让它随方法栈帧一起销毁。
