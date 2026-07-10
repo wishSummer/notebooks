@@ -1,0 +1,228 @@
+{
+  "main": {
+    "id": "9289d54452f69c20",
+    "type": "split",
+    "children": [
+      {
+        "id": "f10876d574121864",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "679afe514fde60f9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "00_个人系统/Codex_自动推进任务.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Codex_自动推进任务"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9404ce803369f2fa",
+    "type": "split",
+    "children": [
+      {
+        "id": "68b3b26bb0ab94db",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "82e46c3f4cfa2fd8",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": true
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "43a9cde30e7be21f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "6c214b17bd74453b",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "960c63c48646fa12",
+    "type": "split",
+    "children": [
+      {
+        "id": "5842f153c11008f7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0513790321905183",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "02_知识库/商业与投资/投资.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "投资 的反向链接列表"
+            }
+          },
+          {
+            "id": "789db96cd275c8bb",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "02_知识库/商业与投资/投资.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "投资 的出链列表"
+            }
+          },
+          {
+            "id": "afd11978cb6b8e66",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "81baf22b5b2c124f",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "e5f25e75f2030100",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "02_知识库/商业与投资/投资.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "投资 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false
+    }
+  },
+  "active": "679afe514fde60f9",
+  "lastOpenFiles": [
+    "03_项目/AI内容生产系统/AI内容生产系统.md",
+    "00_个人系统/Codex_自动推进任务.md",
+    "00_个人系统/Personal_AI_OS_Roadmap.md",
+    "00_个人系统/2026计划表.md",
+    "02_知识库/商业与投资/投资.md",
+    "金融/投资.md",
+    "ComfyUI.md",
+    "99_归档/杂项/OnePlus刷Root.md",
+    "技术栈.md",
+    "2026计划表.md",
+    "AI内容生产系统.md",
+    "FFmpeg.md",
+    "Prompt工程.md",
+    "RAG.md",
+    "03_项目/项目索引.md",
+    "00_个人系统/知识库导航.md",
+    "Personal_AI_OS_Roadmap.md",
+    "02_知识库/AI与Agent/内容生产/FFmpeg.md",
+    "02_知识库/计算机基础/计算机网络/计算机网络层次模型.md",
+    "02_知识库/软件工程/后端/Java/SE/CompletableFuture.md",
+    "07_职业发展/职业发展索引.md",
+    "07_职业发展/面试准备/场景题.md",
+    "06_模板/周复盘模板.md",
+    "06_模板/知识笔记模板.md",
+    "06_模板/项目文档模板.md",
+    "02_知识库/计算机基础/计算机基础索引.md",
+    "02_知识库/软件工程/设计模式",
+    "02_知识库/软件工程/数据库",
+    "02_知识库/软件工程/中间件",
+    "02_知识库/软件工程/DevOps与环境/服务器",
+    "02_知识库/软件工程/DevOps与环境",
+    "02_知识库/计算机基础/计算机网络",
+    "02_知识库/计算机基础/网络安全",
+    "02_知识库/计算机基础/数据结构与算法",
+    "99_归档/杂项",
+    "99_归档",
+    "未命名.canvas",
+    "未命名 1.canvas",
+    "assets/java多线程.png"
+  ]
+}
