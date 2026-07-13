@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "00_个人系统/Codex_自动推进任务.md",
+                "file": "00_个人系统/技术栈.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Codex_自动推进任务"
+              "title": "技术栈"
             }
           }
         ]
@@ -185,10 +185,16 @@
   },
   "active": "679afe514fde60f9",
   "lastOpenFiles": [
-    "03_项目/AI内容生产系统/AI内容生产系统.md",
-    "00_个人系统/Codex_自动推进任务.md",
-    "00_个人系统/Personal_AI_OS_Roadmap.md",
     "00_个人系统/2026计划表.md",
+    "00_个人系统/技术栈.md",
+    "00_个人系统/Personal_AI_OS_Roadmap.md",
+    "00_个人系统/Codex_自动推进任务.md",
+    "00_个人系统/文档规范.md",
+    "03_项目/AI内容生产系统/AI内容生产系统.md",
+    "02_知识库/AI与Agent/RAG.md",
+    "02_知识库/AI与Agent/Prompt工程.md",
+    "03_项目/AI装修智能设计系统/AI装修智能设计系统.md",
+    "00_个人系统/知识库导航.md",
     "02_知识库/商业与投资/投资.md",
     "金融/投资.md",
     "ComfyUI.md",
@@ -200,17 +206,11 @@
     "Prompt工程.md",
     "RAG.md",
     "03_项目/项目索引.md",
-    "00_个人系统/知识库导航.md",
     "Personal_AI_OS_Roadmap.md",
     "02_知识库/AI与Agent/内容生产/FFmpeg.md",
     "02_知识库/计算机基础/计算机网络/计算机网络层次模型.md",
     "02_知识库/软件工程/后端/Java/SE/CompletableFuture.md",
     "07_职业发展/职业发展索引.md",
-    "07_职业发展/面试准备/场景题.md",
-    "06_模板/周复盘模板.md",
-    "06_模板/知识笔记模板.md",
-    "06_模板/项目文档模板.md",
-    "02_知识库/计算机基础/计算机基础索引.md",
     "02_知识库/软件工程/设计模式",
     "02_知识库/软件工程/数据库",
     "02_知识库/软件工程/中间件",
