@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "f10876d574121864",
+        "id": "52ad4b28cc4fa573",
         "type": "tabs",
         "children": [
           {
-            "id": "679afe514fde60f9",
+            "id": "3eee8c6902c18978",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "00_个人系统/Codex_自动推进任务.md",
+                "file": "06_模板/周复盘模板.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Codex_自动推进任务"
+              "title": "周复盘模板"
             }
           }
         ]
@@ -41,7 +41,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": true
+                "autoReveal": true,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "文件列表"
@@ -78,7 +80,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 421.5
   },
   "right": {
     "id": "960c63c48646fa12",
@@ -183,34 +185,36 @@
       "bases:新建数据库": false
     }
   },
-  "active": "679afe514fde60f9",
+  "active": "3eee8c6902c18978",
   "lastOpenFiles": [
-    "03_项目/AI内容生产系统/AI内容生产系统.md",
-    "00_个人系统/Codex_自动推进任务.md",
+    "06_模板/知识笔记模板.md",
+    "06_模板/项目文档模板.md",
+    "00_个人系统/知识库导航.md",
+    "未命名 1.base",
+    "未命名.base",
+    "02_知识库/AI与Agent/RAG.md",
+    "00_个人系统/文档规范.md",
     "00_个人系统/Personal_AI_OS_Roadmap.md",
+    "03_项目/项目索引.md",
     "00_个人系统/2026计划表.md",
+    "2026-09-07.md",
+    "00_个人系统/Codex_自动推进任务.md",
+    "03_项目/AI内容生产系统/P2_Codex自动化视频生产计划_v1.md",
+    "03_项目/AI内容生产系统/选题03_结构化JSON输出_研究卡片与脚本大纲_v0.1.md",
+    "03_项目/AI内容生产系统/选题03_首条视频产出与QA_v1.md",
+    "03_项目/AI内容生产系统/选题03_视觉简报_v0.1.md",
+    "03_项目/AI内容生产系统/选题03_42秒视频脚本与分镜_v1.md",
+    "03_项目/AI内容生产系统/AI内容生产系统.md",
+    "03_项目/AI内容生产系统/选题研究模板_v0.1.md",
+    "03_项目/AI内容生产系统/目标受众与内容方向_v0.1.md",
+    "03_项目/AI装修智能设计系统/真实案例输入模板_v0.1.md",
+    "03_项目/AI装修智能设计系统/装修需求问卷_v0.1.md",
     "02_知识库/商业与投资/投资.md",
     "金融/投资.md",
     "ComfyUI.md",
     "99_归档/杂项/OnePlus刷Root.md",
     "技术栈.md",
     "2026计划表.md",
-    "AI内容生产系统.md",
-    "FFmpeg.md",
-    "Prompt工程.md",
-    "RAG.md",
-    "03_项目/项目索引.md",
-    "00_个人系统/知识库导航.md",
-    "Personal_AI_OS_Roadmap.md",
-    "02_知识库/AI与Agent/内容生产/FFmpeg.md",
-    "02_知识库/计算机基础/计算机网络/计算机网络层次模型.md",
-    "02_知识库/软件工程/后端/Java/SE/CompletableFuture.md",
-    "07_职业发展/职业发展索引.md",
-    "07_职业发展/面试准备/场景题.md",
-    "06_模板/周复盘模板.md",
-    "06_模板/知识笔记模板.md",
-    "06_模板/项目文档模板.md",
-    "02_知识库/计算机基础/计算机基础索引.md",
     "02_知识库/软件工程/设计模式",
     "02_知识库/软件工程/数据库",
     "02_知识库/软件工程/中间件",
@@ -219,8 +223,6 @@
     "02_知识库/计算机基础/计算机网络",
     "02_知识库/计算机基础/网络安全",
     "02_知识库/计算机基础/数据结构与算法",
-    "99_归档/杂项",
-    "99_归档",
     "未命名.canvas",
     "未命名 1.canvas",
     "assets/java多线程.png"

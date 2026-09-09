@@ -25,5 +25,3 @@ RAG（Retrieval-Augmented Generation）通过检索相关资料，为模型提�
 
 - [[Personal_AI_OS_Roadmap]]
 - [[Prompt工程]]
-- [[AI装修智能设计系统]]
-- [[AI内容生产系统]]
